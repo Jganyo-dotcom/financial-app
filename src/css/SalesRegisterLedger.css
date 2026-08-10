@@ -1,0 +1,667 @@
+/* ===================================================
+   SALES & CASH REGISTER LEDGER PAGE
+   Clean layout & fixed drawer z-indexing
+   =================================================== */
+
+.sales-ledger-page {
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  padding: 1.5rem;
+  min-height: 100vh;
+  position: relative;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-main);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.title-icon {
+  color: var(--accent-blue);
+}
+
+.page-header p {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.reconcile-trigger-btn {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--card-shadow);
+  transition: background-color 0.2s ease;
+}
+
+.reconcile-trigger-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+/* Metrics Summary Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.metric-title {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.icon-wrapper {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-wrapper.green {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+.icon-wrapper.blue {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent-blue);
+}
+.icon-wrapper.amber {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+.icon-wrapper.red {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.metric-body h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+}
+
+.green-text {
+  color: #10b981 !important;
+}
+.red-text {
+  color: #ef4444 !important;
+}
+.amber-text {
+  color: #f59e0b !important;
+}
+
+.sub-text {
+  font-size: 0.75rem;
+}
+.sub-text.positive {
+  color: #10b981;
+}
+.sub-text.blue-badge {
+  color: var(--accent-blue);
+}
+.sub-text.muted {
+  color: var(--text-muted);
+}
+
+/* Ledger Card & Toolbar */
+.ledger-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 1.25rem;
+}
+
+.ledger-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.search-box {
+  position: relative;
+  width: 320px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.search-box input {
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.55rem 0.75rem 0.55rem 2.25rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+}
+
+.filter-icon {
+  color: var(--text-muted);
+}
+
+.filter-group select {
+  background: none;
+  border: none;
+  color: var(--text-main);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Ledger Table */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ledger-table th,
+.ledger-table td {
+  padding: 0.8rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+
+.ledger-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  background-color: var(--table-header-bg);
+}
+
+.ledger-table tbody tr:hover {
+  background-color: var(--table-row-hover);
+}
+
+.tx-id {
+  font-weight: 600;
+  color: var(--text-main);
+  display: block;
+}
+
+.tx-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cust-name {
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.item-count-badge {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.amount-cell {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.method-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.method-chip.cash {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.method-chip.momo {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.status-badge.success {
+  color: #10b981;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.775rem;
+}
+
+.view-receipt-btn {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--accent-blue);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.view-receipt-btn:hover {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  border-color: var(--accent-blue);
+}
+
+/* ===================================================
+   SLIDE-OVER RECEIPT DRAWER (FIXED POSITIONING)
+   =================================================== */
+.receipt-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.receipt-drawer {
+  background-color: var(--bg-card);
+  width: 100%;
+  max-width: 440px;
+  height: 100vh;
+  box-shadow: -6px 0 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 10000;
+  animation: slideDrawer 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDrawer {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+}
+
+.drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.drawer-title h3 {
+  font-size: 1.1rem;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.drawer-sub {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+}
+
+.close-drawer-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.close-drawer-btn:hover {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.drawer-body {
+  padding: 1.25rem;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.receipt-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  background-color: var(--bg-subtle);
+  padding: 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.meta-label {
+  font-size: 0.725rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.meta-val {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.meta-val.highlight {
+  color: var(--accent-blue);
+}
+
+.itemized-section h4 {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+.receipt-items-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.receipt-items-table th,
+.receipt-items-table td {
+  padding: 0.55rem 0;
+  border-bottom: 1px dashed var(--border-color);
+  font-size: 0.825rem;
+}
+
+.receipt-items-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: left;
+}
+
+.right-align {
+  text-align: right;
+}
+
+.receipt-summary-box {
+  background-color: var(--bg-subtle);
+  padding: 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.825rem;
+  color: var(--text-muted);
+}
+
+.summary-row.total-row {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #10b981;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.drawer-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+}
+
+.print-btn {
+  width: 100%;
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  padding: 0.65rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: background-color 0.2s;
+}
+
+.print-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+/* ===================================================
+   MODAL DIALOG (RECONCILIATION)
+   =================================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  animation: modalScale 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+}
+
+.modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-title-group h3 {
+  font-size: 1.05rem;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.reconcile-form {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.reconcile-comparison-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  background-color: var(--bg-subtle);
+  padding: 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.box-label {
+  font-size: 0.725rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.box-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.blue-val {
+  color: var(--accent-blue);
+}
+
+.discrepancy-calc-box {
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.discrepancy-calc-box.balanced {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.discrepancy-calc-box.discrepancy {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.reconcile-form .form-group input,
+.reconcile-form .form-group textarea {
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-top: 0.3rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.cancel-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.55rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.confirm-btn {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  padding: 0.55rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}

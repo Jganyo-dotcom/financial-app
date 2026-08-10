@@ -1,0 +1,483 @@
+/* ==========================================================================
+   ALBIJO LANDING PAGE STYLESHEET
+   ========================================================================== */
+
+/* Theme Variables */
+:root {
+  --bg-primary: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-subtle: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: #e0e7ff;
+  --primary-text: #ffffff;
+
+  --emerald-bg: #ecfdf5;
+  --emerald-border: #a7f3d0;
+  --emerald-text: #059669;
+
+  --amber-bg: #fffbeb;
+  --amber-border: #fde68a;
+  --amber-text: #d97706;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-surface-subtle: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #334155;
+
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-light: rgba(99, 102, 241, 0.15);
+  
+  --emerald-bg: rgba(16, 185, 129, 0.12);
+  --emerald-border: rgba(16, 185, 129, 0.25);
+  --emerald-text: #34d399;
+
+  --amber-bg: rgba(245, 158, 11, 0.12);
+  --amber-border: rgba(245, 158, 11, 0.25);
+  --amber-text: #fbbf24;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Base Styles */
+.albijo-landing {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  line-height: 1.5;
+}
+
+.albijo-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Navbar */
+.albijo-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: blur(8px);
+}
+
+.albijo-nav-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4.5rem;
+}
+
+.albijo-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.albijo-logo-badge {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.25rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.albijo-brand-name {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: var(--primary-color);
+}
+
+.albijo-custom-logo {
+  max-height: 2.5rem;
+  width: auto;
+  object-fit: contain;
+}
+
+.albijo-nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.albijo-nav-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.albijo-nav-link:hover {
+  color: var(--primary-color);
+}
+
+.albijo-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Buttons */
+.albijo-theme-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.albijo-theme-btn:hover {
+  background-color: var(--bg-surface-subtle);
+}
+
+.albijo-btn-primary {
+  background-color: var(--primary-color);
+  color: var(--primary-text);
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.albijo-btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.albijo-btn-primary-lg {
+  padding: 0.875rem 1.75rem;
+  font-size: 1.0625rem;
+  border-radius: 0.75rem;
+}
+
+.albijo-btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.albijo-btn-outline:hover {
+  background-color: var(--bg-surface-subtle);
+}
+
+/* Hero Section */
+.albijo-hero {
+  padding: 5rem 0 4rem;
+  text-align: center;
+}
+
+.albijo-badge {
+  display: inline-block;
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.35rem 0.875rem;
+  border-radius: 9999px;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.albijo-hero-title {
+  font-size: 3.25rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin-bottom: 1.5rem;
+}
+
+.albijo-hero-title span {
+  color: var(--primary-color);
+}
+
+.albijo-hero-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  max-width: 48rem;
+  margin: 0 auto 2.5rem;
+  line-height: 1.6;
+}
+
+.albijo-hero-cta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 3.5rem;
+}
+
+.albijo-hidden-input {
+  display: none;
+}
+
+/* Dashboard Mockup Card */
+.albijo-dashboard-preview {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.75rem;
+  box-shadow: var(--shadow-lg);
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+.albijo-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.albijo-stat-card {
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  text-align: left;
+  border: 1px solid transparent;
+}
+
+.albijo-stat-card.indigo {
+  background-color: var(--primary-light);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.albijo-stat-card.emerald {
+  background-color: var(--emerald-bg);
+  border-color: var(--emerald-border);
+}
+
+.albijo-stat-card.amber {
+  background-color: var(--amber-bg);
+  border-color: var(--amber-border);
+}
+
+.albijo-stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.albijo-stat-card.indigo .albijo-stat-label { color: var(--primary-color); }
+.albijo-stat-card.emerald .albijo-stat-label { color: var(--emerald-text); }
+.albijo-stat-card.amber .albijo-stat-label { color: var(--amber-text); }
+
+.albijo-stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.albijo-stat-card.indigo .albijo-stat-value { color: var(--primary-color); }
+.albijo-stat-card.emerald .albijo-stat-value { color: var(--emerald-text); }
+.albijo-stat-card.amber .albijo-stat-value { color: var(--amber-text); }
+
+.albijo-preview-footer {
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* Features Section */
+.albijo-features-section {
+  padding: 5rem 0;
+}
+
+.albijo-section-header {
+  text-align: center;
+  margin-bottom: 3.5rem;
+}
+
+.albijo-section-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.albijo-section-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+}
+
+.albijo-features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.albijo-feature-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  padding: 1.75rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.albijo-feature-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary-color);
+}
+
+.albijo-feature-icon {
+  margin-bottom: 1.25rem;
+  display: inline-block;
+}
+
+.albijo-feature-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.albijo-feature-desc {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* White Label Section */
+.albijo-whitelabel-section {
+  padding: 5rem 0;
+  background-color: var(--bg-surface-subtle);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.albijo-whitelabel-flex {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
+.albijo-whitelabel-content {
+  flex: 1;
+}
+
+.albijo-whitelabel-card {
+  flex: 1;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 2.5rem;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.albijo-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+.albijo-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.albijo-check-icon {
+  color: var(--emerald-text);
+  flex-shrink: 0;
+}
+
+/* Footer */
+.albijo-footer {
+  padding: 2.5rem 0;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 1024px) {
+  .albijo-features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .albijo-nav-links {
+    display: none;
+  }
+
+  .albijo-hero-title {
+    font-size: 2.25rem;
+  }
+
+  .albijo-hero-subtitle {
+    font-size: 1rem;
+  }
+
+  .albijo-hero-cta {
+    flex-direction: column;
+  }
+
+  .albijo-stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .albijo-whitelabel-flex {
+    flex-direction: column;
+  }
+
+  .albijo-features-grid {
+    grid-template-columns: 1fr;
+  }
+}
