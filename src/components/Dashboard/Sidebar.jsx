@@ -18,6 +18,7 @@ import "./Sidebar.css";
 
 export default function Sidebar({
   user,
+  company,
   onLogout,
   isCollapsed,
   setIsCollapsed,
@@ -39,7 +40,7 @@ export default function Sidebar({
       icon: PackagePlus,
     },
     {
-      path: "/dashboard/pos", // <-- Updated from /entry to /dashboard/pos
+      path: "/dashboard/pos",
       label: "Customer & POS",
       icon: Receipt,
     },
@@ -60,6 +61,19 @@ export default function Sidebar({
     },
   ];
 
+  // Helper logic to get up to a clean 2-letter avatar from user name (e.g., "Elikem Shela" -> "ES")
+  const getUserInitials = () => {
+    if (!user?.name) return "A";
+    const nameParts = user.name.trim().split(/\s+/);
+    if (nameParts.length > 1) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    }
+    return nameParts[0][0].toUpperCase();
+  };
+
+  const currentCompanyName = company?.name || "ALBIJO";
+  const currentUserName = user?.name || "ALBIJO USER";
+
   return (
     <>
       {/* Mobile Drawer Backdrop Overlay */}
@@ -77,11 +91,25 @@ export default function Sidebar({
       >
         {/* Header / Logo Section */}
         <div className="sidebar-header">
-          <div className="logo-container">
-            <div className="logo-icon-bg">
+          <div
+            className="logo-container"
+            style={{ minWidth: 0, width: "100%" }}
+          >
+            <div className="logo-icon-bg" style={{ flexShrink: 0 }}>
               <Store size={22} />
             </div>
-            <span className="logo-text">{user?.companyName || "ALBIJO"}</span>
+            {/* Added dynamic HTML title attribute so users can view the full name on mouse hover */}
+            <span
+              className="logo-text"
+              title={currentCompanyName}
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {currentCompanyName}
+            </span>
           </div>
 
           {/* Desktop Collapse Arrow Button */}
@@ -120,7 +148,11 @@ export default function Sidebar({
                 }
                 onClick={() => setIsMobileOpen(false)}
               >
-                <Icon size={20} className="nav-icon" />
+                <Icon
+                  size={20}
+                  className="nav-icon"
+                  style={{ flexShrink: 0 }}
+                />
                 <span className="nav-text">{item.label}</span>
               </NavLink>
             );
@@ -135,8 +167,12 @@ export default function Sidebar({
             onClick={() => setIsDarkMode(!isDarkMode)}
             title="Toggle Light/Dark Theme"
           >
-            <div className="theme-info">
-              {isDarkMode ? <Moon size={18} /> : <Sun size={18} />}
+            <div className="theme-info" style={{ minWidth: 0 }}>
+              {isDarkMode ? (
+                <Moon size={18} style={{ flexShrink: 0 }} />
+              ) : (
+                <Sun size={18} style={{ flexShrink: 0 }} />
+              )}
               <span className="nav-text">
                 {isDarkMode ? "Dark Mode" : "Light Mode"}
               </span>
@@ -148,17 +184,48 @@ export default function Sidebar({
           </div>
 
           {/* User Profile */}
-          <div className="user-profile">
-            <div className="user-avatar">
-              {user?.companyName ? user.companyName[0].toUpperCase() : "A"}
+          <div className="user-profile" style={{ minWidth: 0, width: "100%" }}>
+            <div className="user-avatar" style={{ flexShrink: 0 }}>
+              {getUserInitials()}
             </div>
-            <div className="user-info-text">
-              <span className="user-name">
-                {user?.companyName || "ALBIJO INCONPROTION"}
+
+            <div
+              className="user-info-text"
+              style={{ minWidth: 0, flex: 1, overflow: "hidden" }}
+            >
+              <span
+                className="user-name"
+                title={currentUserName}
+                style={{
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {currentUserName}
               </span>
-              <span className="user-role">{user?.role || "Store Owner"}</span>
+              <span
+                className="user-role"
+                style={{
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {company?.reference
+                  ? `Code: ${company.reference}`
+                  : user?.role || "Store Owner"}
+              </span>
             </div>
-            <button className="logout-btn" onClick={onLogout} title="Log Out">
+
+            <button
+              className="logout-btn"
+              onClick={onLogout}
+              title="Log Out"
+              style={{ flexShrink: 0 }}
+            >
               <LogOut size={18} />
             </button>
           </div>

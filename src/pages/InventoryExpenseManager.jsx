@@ -1,131 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Package,
   DollarSign,
   Plus,
   RefreshCw,
-  Tag,
   TrendingDown,
   Layers,
   Search,
-  Filter,
   X,
   Edit3,
   AlertTriangle,
-  CheckCircle2,
   Receipt,
-  Truck,
-  Zap,
-  User,
-  Calendar,
+  Trash2,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
+import { API_BASE_URL } from "../components/apiEnpoint";
 import "../css/InventoryExpenseManager.css";
+import toast from "react-hot-toast";
 
-// Initial Mock Inventory Products
-const INITIAL_PRODUCTS = [
-  {
-    id: "PRD-101",
-    name: "PVC Pipe 4-Inch (6m)",
-    category: "Plumbing",
-    stockQuantity: 42,
-    unitPrice: 45.0,
-    costPrice: 30.0,
-    lowStockThreshold: 15,
-  },
-  {
-    id: "PRD-102",
-    name: "Emulsion Paint White (20L)",
-    category: "Paints",
-    stockQuantity: 8,
-    unitPrice: 395.0,
-    costPrice: 290.0,
-    lowStockThreshold: 10, // Low stock warning
-  },
-  {
-    id: "PRD-103",
-    name: "Cement Bag 50kg (32.5R)",
-    category: "Masonry",
-    stockQuantity: 120,
-    unitPrice: 85.0,
-    costPrice: 68.0,
-    lowStockThreshold: 30,
-  },
-  {
-    id: "PRD-104",
-    name: "Roofing Nails (1kg pack)",
-    category: "Hardware",
-    stockQuantity: 5,
-    unitPrice: 25.0,
-    costPrice: 16.0,
-    lowStockThreshold: 12, // Low stock warning
-  },
-  {
-    id: "PRD-105",
-    name: "High-Tensile Steel Rod 12mm",
-    category: "Construction",
-    stockQuantity: 85,
-    unitPrice: 80.0,
-    costPrice: 58.0,
-    lowStockThreshold: 20,
-  },
-];
-
-// Initial Mock Operational Expenses
-const INITIAL_EXPENSES = [
-  {
-    id: "EXP-301",
-    date: "2026-08-10",
-    time: "11:15 AM",
-    category: "Generator Fuel",
-    amount: 180.0,
-    purpose:
-      "Purchased 15L Diesel for store backup generator during power outage.",
-    paymentMethod: "Cash",
-    loggedBy: "Store Manager",
-  },
-  {
-    id: "EXP-302",
-    date: "2026-08-09",
-    time: "03:30 PM",
-    category: "Transport & Offloading",
-    amount: 250.0,
-    purpose: "Offloading fee for cement truck batch #402.",
-    paymentMethod: "Mobile Money",
-    loggedBy: "Store Manager",
-  },
-  {
-    id: "EXP-303",
-    date: "2026-08-07",
-    time: "09:00 AM",
-    category: "Store Utilities",
-    amount: 420.0,
-    purpose: "Electricity ECG prepaid token purchase for August.",
-    paymentMethod: "Mobile Money",
-    loggedBy: "Admin",
-  },
+const CATEGORIES = [
+  "Plumbing",
+  "Paints",
+  "Masonry",
+  "Hardware",
+  "Construction",
+  "Electrical",
+  "Building Materials & Cement",
+  "Tools & Hardware",
+  "Paints & Sealants",
+  "Fasteners & Nails",
+  "General Stock",
 ];
 
 export default function InventoryExpenseManager() {
   const [activeTab, setActiveTab] = useState("inventory"); // 'inventory' | 'expenses'
 
   // Data States
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
-  const [expenses, setExpenses] = useState(INITIAL_EXPENSES);
+  const [products, setProducts] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // Modal States
   const [isRestockOpen, setIsRestockOpen] = useState(false);
-  const [isPriceOpen, setIsPriceOpen] = useState(false);
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isReverseExpenseOpen, setIsReverseExpenseOpen] = useState(false);
 
-  // Active Selected Product for Modals
+  // Selected Product & Expense for Modals
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedExpense, setSelectedExpense] = useState(null);
 
-  // Form Field Inputs
+  // Restock Input
   const [restockQty, setRestockQty] = useState("");
-  const [newSellingPrice, setNewSellingPrice] = useState("");
-  const [newCostPrice, setNewCostPrice] = useState("");
+
+  // Edit Product Form State
+  const [editName, setEditName] = useState("");
+  const [editCategory, setEditCategory] = useState("Hardware");
+  const [editCostPrice, setEditCostPrice] = useState("");
+  const [editUnitPrice, setEditUnitPrice] = useState("");
+  const [editStockQuantity, setEditStockQuantity] = useState("");
+  const [editLowStockThreshold, setEditLowStockThreshold] = useState("10");
 
   // New Expense Form State
   const [expenseCategory, setExpenseCategory] = useState("Generator Fuel");
@@ -133,121 +70,237 @@ export default function InventoryExpenseManager() {
   const [expensePurpose, setExpensePurpose] = useState("");
   const [expenseMethod, setExpenseMethod] = useState("Cash");
 
-  // New Product Form State
-  const [newProdName, setNewProdName] = useState("");
-  const [newProdCategory, setNewProdCategory] = useState("Hardware");
-  const [newProdStock, setNewProdStock] = useState("");
-  const [newProdUnitPrice, setNewProdUnitPrice] = useState("");
-  const [newProdCostPrice, setNewProdCostPrice] = useState("");
+  const token = localStorage.getItem("token");
+
+  // Helper function for standard fetch calls
+  const request = async (url, options = {}) => {
+    const res = await fetch(`${API_BASE_URL}/api/product${url}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+      ...options,
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || `HTTP error! status: ${res.status}`);
+    }
+    return res.json();
+  };
+
+  // --- FETCH INITIAL DATA ---
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      const [productsRes, expensesRes] = await Promise.all([
+        request("/products"),
+        request("/expenses"),
+      ]);
+
+      setProducts(productsRes.products || productsRes || []);
+      setExpenses(expensesRes.expenses || expensesRes || []);
+    } catch (error) {
+      console.error("Error fetching data from server:", error);
+      toast.error(error.message || "Failed to load data from server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper to open Edit Modal with populated data
+  const handleOpenEditModal = (p) => {
+    setSelectedProduct(p);
+    setEditName(p.name || "");
+    setEditCategory(p.category || "Hardware");
+    setEditCostPrice(p.costPrice !== undefined ? p.costPrice : "");
+    setEditUnitPrice(p.unitPrice !== undefined ? p.unitPrice : "");
+    setEditStockQuantity(p.stockQuantity !== undefined ? p.stockQuantity : "");
+    setEditLowStockThreshold(
+      p.lowStockThreshold !== undefined ? p.lowStockThreshold : 10,
+    );
+    setIsEditOpen(true);
+  };
 
   // --- ACTIONS ---
 
-  // 1. Add Stock Quantity
-  const handleRestockSubmit = (e) => {
+  // 1. Restock Product (PATCH /products/:productId/restock)
+  const handleRestockSubmit = async (e) => {
     e.preventDefault();
     if (!selectedProduct) return;
 
+    const productId = selectedProduct._id || selectedProduct.id;
     const addedStock = parseInt(restockQty) || 0;
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === selectedProduct.id
-          ? { ...p, stockQuantity: p.stockQuantity + addedStock }
-          : p,
-      ),
-    );
 
-    setIsRestockOpen(false);
-    setRestockQty("");
-    setSelectedProduct(null);
+    try {
+      const res = await request(`/products/${productId}/restock`, {
+        method: "PATCH",
+        body: JSON.stringify({ addedQuantity: addedStock }),
+      });
+
+      const updatedProduct = res.product || res;
+
+      setProducts((prev) =>
+        prev.map((p) => ((p._id || p.id) === productId ? updatedProduct : p)),
+      );
+      toast.success("Restock successful");
+      setIsRestockOpen(false);
+      setRestockQty("");
+      setSelectedProduct(null);
+    } catch (error) {
+      console.error("Error restocking product:", error);
+      toast.error(error.message || "Failed to restock product");
+    }
   };
 
-  // 2. Update Product Retail & Cost Prices
-  const handlePriceSubmit = (e) => {
+  // 2. Update Product Details (PATCH /products/:productId/price)
+  const handleEditProductSubmit = async (e) => {
     e.preventDefault();
     if (!selectedProduct) return;
 
-    const updatedPrice =
-      parseFloat(newSellingPrice) || selectedProduct.unitPrice;
-    const updatedCost = parseFloat(newCostPrice) || selectedProduct.costPrice;
+    const productId = selectedProduct._id || selectedProduct.id;
 
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === selectedProduct.id
-          ? { ...p, unitPrice: updatedPrice, costPrice: updatedCost }
-          : p,
-      ),
-    );
-
-    setIsPriceOpen(false);
-    setNewSellingPrice("");
-    setNewCostPrice("");
-    setSelectedProduct(null);
-  };
-
-  // 3. Add Brand New Product
-  const handleAddProductSubmit = (e) => {
-    e.preventDefault();
-    const newProduct = {
-      id: `PRD-${100 + products.length + 1}`,
-      name: newProdName,
-      category: newProdCategory,
-      stockQuantity: parseInt(newProdStock) || 0,
-      unitPrice: parseFloat(newProdUnitPrice) || 0,
-      costPrice: parseFloat(newProdCostPrice) || 0,
-      lowStockThreshold: 10,
+    const payload = {
+      name: editName,
+      category: editCategory,
+      costPrice: parseFloat(editCostPrice) || 0,
+      unitPrice: parseFloat(editUnitPrice) || 0,
+      stockQuantity: parseInt(editStockQuantity) || 0,
+      lowStockThreshold: parseInt(editLowStockThreshold) || 10,
     };
 
-    setProducts([newProduct, ...products]);
-    setIsAddProductOpen(false);
-    setNewProdName("");
-    setNewProdStock("");
-    setNewProdUnitPrice("");
-    setNewProdCostPrice("");
+    try {
+      const res = await request(`/products/${productId}/price`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+
+      const updatedProduct = res.product || res;
+
+      setProducts((prev) =>
+        prev.map((p) => ((p._id || p.id) === productId ? updatedProduct : p)),
+      );
+      toast.success("Product updated successfully");
+      setIsEditOpen(false);
+      setSelectedProduct(null);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      toast.error(error.message || "Failed to update product details");
+    }
   };
 
-  // 4. Log New Operational Expense
-  const handleAddExpenseSubmit = (e) => {
+  // 3. Delete Product (DELETE /products/:productId)
+  const handleDeleteProductSubmit = async () => {
+    if (!selectedProduct) return;
+
+    const productId = selectedProduct._id || selectedProduct.id;
+
+    try {
+      await request(`/products/${productId}`, {
+        method: "DELETE",
+      });
+
+      setProducts((prev) => prev.filter((p) => (p._id || p.id) !== productId));
+
+      toast.success("Product deleted successfully");
+      setIsDeleteOpen(false);
+      setSelectedProduct(null);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      toast.error(error.message || "Failed to delete product");
+    }
+  };
+
+  // 4. Log New Operational Expense (POST /expenses)
+  const handleAddExpenseSubmit = async (e) => {
     e.preventDefault();
     const today = new Date();
-    const newExp = {
-      id: `EXP-${300 + expenses.length + 1}`,
-      date: today.toISOString().split("T")[0],
-      time: today.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+    const formattedDate = today.toISOString().split("T")[0];
+    const formattedTime = today.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const newExpensePayload = {
+      date: formattedDate,
+      time: formattedTime,
       category: expenseCategory,
       amount: parseFloat(expenseAmount) || 0,
       purpose: expensePurpose,
       paymentMethod: expenseMethod,
-      loggedBy: "Store Manager",
     };
 
-    setExpenses([newExp, ...expenses]);
-    setIsAddExpenseOpen(false);
-    setExpenseAmount("");
-    setExpensePurpose("");
+    try {
+      const res = await request("/expenses", {
+        method: "POST",
+        body: JSON.stringify(newExpensePayload),
+      });
+
+      const createdExpense = res.expense || res;
+
+      setExpenses((prev) => [createdExpense, ...prev]);
+      toast.success("Expense recorded successfully");
+
+      setIsAddExpenseOpen(false);
+      setExpenseAmount("");
+      setExpensePurpose("");
+    } catch (error) {
+      console.error("Error adding expense:", error);
+      toast.error(error.message || "Failed to log expense");
+    }
+  };
+
+  // 5. Reverse Expense (DELETE /expenses/:expenseId)
+  const handleReverseExpenseSubmit = async () => {
+    if (!selectedExpense) return;
+
+    const expenseId = selectedExpense._id || selectedExpense.id;
+
+    try {
+      await request(`/expenses/${expenseId}`, {
+        method: "DELETE",
+      });
+
+      setExpenses((prev) => prev.filter((e) => (e._id || e.id) !== expenseId));
+
+      toast.success("Expense reversed successfully");
+      setIsReverseExpenseOpen(false);
+      setSelectedExpense(null);
+    } catch (error) {
+      console.error("Error reversing expense:", error);
+      toast.error(error.message || "Failed to reverse expense");
+    }
   };
 
   // Computed Values
   const lowStockCount = products.filter(
-    (p) => p.stockQuantity <= p.lowStockThreshold,
+    (p) => p.stockQuantity <= (p.lowStockThreshold ?? 10),
   ).length;
 
   const totalInventoryValue = products.reduce(
-    (sum, p) => sum + p.stockQuantity * p.unitPrice,
+    (sum, p) => sum + (p.stockQuantity || 0) * (p.unitPrice || 0),
     0,
   );
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = expenses.reduce(
+    (sum, e) => sum + (parseFloat(e.amount) || 0),
+    0,
+  );
 
   // Search Filter
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredProducts = products.filter((p) => {
+    const term = searchTerm.toLowerCase();
+    const code = p.productCode || p.sku || p._id || p.id || "";
+    return (
+      p.name?.toLowerCase().includes(term) ||
+      p.category?.toLowerCase().includes(term) ||
+      code.toString().toLowerCase().includes(term)
+    );
+  });
 
   return (
     <div className="manager-page">
@@ -259,7 +312,7 @@ export default function InventoryExpenseManager() {
             Control
           </h2>
           <p>
-            Update inventory stock levels, adjust prices, and log store
+            Update inventory stock levels, modify product details, and log store
             expenses.
           </p>
         </div>
@@ -353,151 +406,183 @@ export default function InventoryExpenseManager() {
         </div>
       </section>
 
-      {/* TAB 1: INVENTORY & STOCK MANAGEMENT */}
-      {activeTab === "inventory" && (
-        <section className="manager-card">
-          <div className="card-toolbar">
-            <div className="search-box">
-              <Search size={16} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search product name, category, or code..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+      {/* BACKEND LOADING STATE */}
+      {loading ? (
+        <div className="manager-card loading-container">
+          <Loader2 className="spinner-icon" size={38} />
+          <p>Fetching inventory records and expense logs...</p>
+        </div>
+      ) : (
+        <>
+          {/* TAB 1: INVENTORY & STOCK MANAGEMENT */}
+          {activeTab === "inventory" && (
+            <section className="manager-card">
+              <div className="card-toolbar">
+                <div className="search-box">
+                  <Search size={16} className="search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search product name, category, or code..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
 
-            <button
-              type="button"
-              className="primary-action-btn"
-              onClick={() => setIsAddProductOpen(true)}
-            >
-              <Plus size={16} /> Add New Product
-            </button>
-          </div>
-
-          <div className="table-responsive">
-            <table className="manager-table">
-              <thead>
-                <tr>
-                  <th>Product Code & Name</th>
-                  <th>Category</th>
-                  <th>In Stock</th>
-                  <th>Unit Cost</th>
-                  <th>Selling Price</th>
-                  <th>Margin</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map((p) => {
-                  const isLow = p.stockQuantity <= p.lowStockThreshold;
-                  const margin = p.unitPrice - p.costPrice;
-                  return (
-                    <tr key={p.id}>
-                      <td>
-                        <span className="item-name">{p.name}</span>
-                        <span className="item-code">{p.id}</span>
-                      </td>
-                      <td>
-                        <span className="category-badge">{p.category}</span>
-                      </td>
-                      <td>
-                        <span className={`stock-badge ${isLow ? "low" : "ok"}`}>
-                          {isLow && <AlertTriangle size={12} />}
-                          {p.stockQuantity} units
-                        </span>
-                      </td>
-                      <td className="muted-cell">${p.costPrice.toFixed(2)}</td>
-                      <td className="price-cell">${p.unitPrice.toFixed(2)}</td>
-                      <td className="positive-text">+${margin.toFixed(2)}</td>
-                      <td>
-                        <div className="action-button-group">
-                          <button
-                            type="button"
-                            className="btn-restock"
-                            onClick={() => {
-                              setSelectedProduct(p);
-                              setIsRestockOpen(true);
-                            }}
-                          >
-                            <RefreshCw size={13} /> Add Stock
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-price"
-                            onClick={() => {
-                              setSelectedProduct(p);
-                              setNewSellingPrice(p.unitPrice);
-                              setNewCostPrice(p.costPrice);
-                              setIsPriceOpen(true);
-                            }}
-                          >
-                            <Tag size={13} /> Edit Price
-                          </button>
-                        </div>
-                      </td>
+              <div className="table-responsive">
+                <table className="manager-table">
+                  <thead>
+                    <tr>
+                      <th>Product Code & Name</th>
+                      <th>Category</th>
+                      <th>In Stock</th>
+                      <th>Unit Cost</th>
+                      <th>Selling Price</th>
+                      <th>Margin</th>
+                      <th>Actions</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+                  </thead>
+                  <tbody>
+                    {filteredProducts.map((p) => {
+                      const key = p._id || p.id;
+                      const displayCode = p.productCode || p.sku || key;
+                      const isLow =
+                        p.stockQuantity <= (p.lowStockThreshold ?? 10);
+                      const margin = (p.unitPrice || 0) - (p.costPrice || 0);
 
-      {/* TAB 2: EXPENSE TRACKER LEDGER */}
-      {activeTab === "expenses" && (
-        <section className="manager-card">
-          <div className="card-toolbar">
-            <h3>Operational Expenses & Purpose Log</h3>
-            <button
-              type="button"
-              className="primary-action-btn amber"
-              onClick={() => setIsAddExpenseOpen(true)}
-            >
-              <Plus size={16} /> Record New Expense
-            </button>
-          </div>
+                      return (
+                        <tr key={key}>
+                          <td>
+                            <span className="item-name">{p.name}</span>
+                            <span className="item-code">{displayCode}</span>
+                          </td>
+                          <td>
+                            <span className="category-badge">{p.category}</span>
+                          </td>
+                          <td>
+                            <span
+                              className={`stock-badge ${isLow ? "low" : "ok"}`}
+                            >
+                              {isLow && <AlertTriangle size={12} />}
+                              {p.stockQuantity} units
+                            </span>
+                          </td>
+                          <td className="muted-cell">
+                            ${Number(p.costPrice || 0).toFixed(2)}
+                          </td>
+                          <td className="price-cell">
+                            ${Number(p.unitPrice || 0).toFixed(2)}
+                          </td>
+                          <td className="positive-text">
+                            +${Number(margin).toFixed(2)}
+                          </td>
+                          <td>
+                            <div className="action-button-group">
+                              <button
+                                type="button"
+                                className="btn-restock"
+                                onClick={() => {
+                                  setSelectedProduct(p);
+                                  setIsRestockOpen(true);
+                                }}
+                              >
+                                <RefreshCw size={13} /> Add Stock
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-price"
+                                onClick={() => handleOpenEditModal(p)}
+                              >
+                                <Edit3 size={13} /> Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-delete"
+                                onClick={() => {
+                                  setSelectedProduct(p);
+                                  setIsDeleteOpen(true);
+                                }}
+                              >
+                                <Trash2 size={13} /> Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
 
-          <div className="table-responsive">
-            <table className="manager-table">
-              <thead>
-                <tr>
-                  <th>Date & Time</th>
-                  <th>Category</th>
-                  <th>Amount ($)</th>
-                  <th>Purpose / Description</th>
-                  <th>Payment Method</th>
-                  <th>Logged By</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenses.map((exp) => (
-                  <tr key={exp.id}>
-                    <td>
-                      <span className="item-name">{exp.date}</span>
-                      <span className="item-code">{exp.time}</span>
-                    </td>
-                    <td>
-                      <span className="exp-category-chip">{exp.category}</span>
-                    </td>
-                    <td className="amount-cell amber-text">
-                      -${exp.amount.toFixed(2)}
-                    </td>
-                    <td className="purpose-cell">{exp.purpose}</td>
-                    <td>
-                      <span className="method-chip">{exp.paymentMethod}</span>
-                    </td>
-                    <td>
-                      <span className="logged-by-text">{exp.loggedBy}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+          {/* TAB 2: EXPENSE TRACKER LEDGER */}
+          {activeTab === "expenses" && (
+            <section className="manager-card">
+              <div className="card-toolbar">
+                <h3>Operational Expenses & Purpose Log</h3>
+                <button
+                  type="button"
+                  className="primary-action-btn amber"
+                  onClick={() => setIsAddExpenseOpen(true)}
+                >
+                  <Plus size={16} /> Record New Expense
+                </button>
+              </div>
+
+              <div className="table-responsive">
+                <table className="manager-table">
+                  <thead>
+                    <tr>
+                      <th>Date & Time</th>
+                      <th>Category</th>
+                      <th>Amount ($)</th>
+                      <th>Purpose / Description</th>
+                      <th>Payment Method</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {expenses.map((exp) => (
+                      <tr key={exp._id || exp.id || Math.random()}>
+                        <td>
+                          <span className="item-name">{exp.date}</span>
+                          <span className="item-code">{exp.time}</span>
+                        </td>
+                        <td>
+                          <span className="exp-category-chip">
+                            {exp.category}
+                          </span>
+                        </td>
+                        <td className="amount-cell amber-text">
+                          -${Number(exp.amount || 0).toFixed(2)}
+                        </td>
+                        <td className="purpose-cell">{exp.purpose}</td>
+                        <td>
+                          <span className="method-chip">
+                            {exp.paymentMethod}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn-reverse"
+                            onClick={() => {
+                              setSelectedExpense(exp);
+                              setIsReverseExpenseOpen(true);
+                            }}
+                          >
+                            <RotateCcw size={13} /> Reverse
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       {/* ================= MODAL 1: RESTOCK PRODUCT ================= */}
@@ -567,59 +652,112 @@ export default function InventoryExpenseManager() {
         </div>
       )}
 
-      {/* ================= MODAL 2: UPDATE PRICES ================= */}
-      {isPriceOpen && selectedProduct && (
-        <div className="modal-overlay" onClick={() => setIsPriceOpen(false)}>
+      {/* ================= MODAL 2: EDIT PRODUCT DETAILS ================= */}
+      {isEditOpen && selectedProduct && (
+        <div className="modal-overlay" onClick={() => setIsEditOpen(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-group">
-                <Tag size={18} className="title-icon" />
-                <h3>Update Pricing</h3>
+                <Edit3 size={18} className="title-icon" />
+                <h3>Edit Product Details</h3>
               </div>
               <button
                 type="button"
                 className="close-drawer-btn"
-                onClick={() => setIsPriceOpen(false)}
+                onClick={() => setIsEditOpen(false)}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handlePriceSubmit} className="modal-form">
+            <form onSubmit={handleEditProductSubmit} className="modal-form">
               <div className="item-info-summary">
-                <span className="info-title">{selectedProduct.name}</span>
-                <span className="info-sub">{selectedProduct.id}</span>
+                <span className="info-title">
+                  {selectedProduct.productCode ||
+                    selectedProduct.sku ||
+                    selectedProduct._id}
+                </span>
               </div>
 
               <div className="form-group">
-                <label>Unit Cost Price ($) [Purchase Price]</label>
+                <label>Product Name *</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={newCostPrice}
-                  onChange={(e) => setNewCostPrice(e.target.value)}
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label>Retail Selling Price ($) [Customer Price] *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={newSellingPrice}
-                  onChange={(e) => setNewSellingPrice(e.target.value)}
-                  required
-                />
+                <label>Category *</label>
+                <select
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {newSellingPrice && newCostPrice && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Cost Price ($) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editCostPrice}
+                    onChange={(e) => setEditCostPrice(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Retail Selling Price ($) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editUnitPrice}
+                    onChange={(e) => setEditUnitPrice(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Current Stock Quantity *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editStockQuantity}
+                    onChange={(e) => setEditStockQuantity(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Low Stock Alert Level *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editLowStockThreshold}
+                    onChange={(e) => setEditLowStockThreshold(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {editUnitPrice && editCostPrice && (
                 <div className="preview-calc-box">
                   <span>Expected Profit Margin per Item:</span>
                   <strong className="positive-text">
                     +$
                     {(
-                      parseFloat(newSellingPrice) - parseFloat(newCostPrice)
+                      parseFloat(editUnitPrice) - parseFloat(editCostPrice)
                     ).toFixed(2)}
                   </strong>
                 </div>
@@ -629,12 +767,12 @@ export default function InventoryExpenseManager() {
                 <button
                   type="button"
                   className="cancel-btn"
-                  onClick={() => setIsPriceOpen(false)}
+                  onClick={() => setIsEditOpen(false)}
                 >
                   Cancel
                 </button>
                 <button type="submit" className="confirm-btn">
-                  Save Price Change
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -738,102 +876,99 @@ export default function InventoryExpenseManager() {
         </div>
       )}
 
-      {/* ================= MODAL 4: ADD NEW PRODUCT ================= */}
-      {isAddProductOpen && (
-        <div
-          className="modal-overlay"
-          onClick={() => setIsAddProductOpen(false)}
-        >
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      {/* ================= MODAL 4: DELETE CONFIRMATION ================= */}
+      {isDeleteOpen && selectedProduct && (
+        <div className="modal-overlay" onClick={() => setIsDeleteOpen(false)}>
+          <div className="modal-card sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-group">
-                <Package size={18} className="title-icon" />
-                <h3>Add New Product to Catalog</h3>
+                <Trash2 size={18} className="title-icon red-text" />
+                <h3>Delete Product</h3>
               </div>
               <button
                 type="button"
                 className="close-drawer-btn"
-                onClick={() => setIsAddProductOpen(false)}
+                onClick={() => setIsDeleteOpen(false)}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleAddProductSubmit} className="modal-form">
-              <div className="form-group">
-                <label>Product Name *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. PVC Elbow Joint 2-Inch"
-                  value={newProdName}
-                  onChange={(e) => setNewProdName(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="modal-body-padding">
+              <p className="delete-confirm-text">
+                Are you sure you want to delete{" "}
+                <strong>"{selectedProduct.name}"</strong>? This item will be
+                permanently removed from your inventory DB.
+              </p>
+            </div>
 
-              <div className="form-group">
-                <label>Category</label>
-                <select
-                  value={newProdCategory}
-                  onChange={(e) => setNewProdCategory(e.target.value)}
-                >
-                  <option value="Plumbing">Plumbing</option>
-                  <option value="Paints">Paints</option>
-                  <option value="Masonry">Masonry</option>
-                  <option value="Hardware">Hardware</option>
-                  <option value="Construction">Construction</option>
-                  <option value="Electrical">Electrical</option>
-                </select>
-              </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => setIsDeleteOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="confirm-btn red-btn"
+                onClick={handleDeleteProductSubmit}
+              >
+                Delete Product
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Initial Stock Qty *</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    value={newProdStock}
-                    onChange={(e) => setNewProdStock(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Cost Price ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={newProdCostPrice}
-                    onChange={(e) => setNewProdCostPrice(e.target.value)}
-                  />
-                </div>
+      {/* ================= MODAL 5: REVERSE EXPENSE CONFIRMATION ================= */}
+      {isReverseExpenseOpen && selectedExpense && (
+        <div
+          className="modal-overlay"
+          onClick={() => setIsReverseExpenseOpen(false)}
+        >
+          <div className="modal-card sm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <RotateCcw size={18} className="title-icon amber-text" />
+                <h3>Reverse Expense Record</h3>
               </div>
+              <button
+                type="button"
+                className="close-drawer-btn"
+                onClick={() => setIsReverseExpenseOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-              <div className="form-group">
-                <label>Retail Selling Price ($) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={newProdUnitPrice}
-                  onChange={(e) => setNewProdUnitPrice(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="modal-body-padding">
+              <p className="delete-confirm-text">
+                Are you sure you want to reverse the expense of{" "}
+                <strong>
+                  ${Number(selectedExpense.amount || 0).toFixed(2)}
+                </strong>{" "}
+                for <strong>"{selectedExpense.purpose}"</strong>?
+              </p>
+            </div>
 
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={() => setIsAddProductOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="confirm-btn">
-                  Save Product
-                </button>
-              </div>
-            </form>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => setIsReverseExpenseOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="confirm-btn amber-btn"
+                onClick={handleReverseExpenseSubmit}
+              >
+                Confirm Reversal
+              </button>
+            </div>
           </div>
         </div>
       )}

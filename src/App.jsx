@@ -9,13 +9,13 @@ import {
 import { Toaster, toast } from "react-hot-toast";
 
 import LandingPage from "./components/landingPage/LandingPage";
-import Login from "./components/Auth/Lgin";
+import Login from "./components/Auth/Login";
 import Register from "./components/Auth/Register";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import DashboardLayout from "./components/Dashboard/DashboardLayout";
 import DashboardOverview from "./pages/DashboardOverview";
 import BulkInventory from "./pages/BulkInventory";
-import CustomerEntry from "./pages/CustomerEntry"; // <-- Imported here
+import CustomerEntry from "./pages/CustomerEntry";
 import FinancialOverview from "./pages/FinancialOverview";
 import SalesRegisterLedger from "./pages/SalesRegisterLedger";
 import InventoryExpenseManager from "./pages/InventoryExpenseManager";
@@ -23,32 +23,42 @@ import InventoryExpenseManager from "./pages/InventoryExpenseManager";
 function AppRoutes() {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState({
-    email: "owner@albijo.com",
-    companyName: "ALBIJO Hardware",
-    role: "Store Owner",
+  // 1. Check if a token exists in localStorage to handle route protection state
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem("token");
   });
 
   const handleLogin = (userData) => {
-    setUser(userData);
-    toast.success(`Welcome back to ${userData.companyName}!`);
+    // Set authentication state to true since localStorage is updated inside Login.jsx
+    setIsAuthenticated(true);
+
+    toast.success(`Welcome back to ${userData.company?.name || "Workspace"}!`);
     navigate("/dashboard");
   };
 
   const handleRegister = (userData) => {
-    setUser(userData);
-    toast.success(`Workspace created for ${userData.companyName}!`);
+    // Set authentication state to true since localStorage is updated inside Register.jsx
+    setIsAuthenticated(true);
+
+    toast.success(
+      `Workspace created for ${userData.company?.name || "ALBIJO"}!`,
+    );
     navigate("/dashboard");
   };
 
   const handleLogout = () => {
-    setUser(null);
+    // Clear storage systems completely
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("company");
+
+    setIsAuthenticated(false);
     toast("Logged out of ALBIJO", { icon: "👋" });
     navigate("/login");
   };
 
   const handleLaunchApp = () => {
-    if (user) {
+    if (isAuthenticated) {
       navigate("/dashboard");
     } else {
       toast.error("Please log in to access the workspace.");
@@ -90,10 +100,10 @@ function AppRoutes() {
       />
 
       {/* Protected Dashboard Routes */}
-      <Route element={<ProtectedRoute isAuthenticated={!!user} />}>
+      <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
         <Route
           path="/dashboard"
-          element={<DashboardLayout user={user} onLogout={handleLogout} />}
+          element={<DashboardLayout onLogout={handleLogout} />}
         >
           {/* Overview Tab */}
           <Route index element={<DashboardOverview />} />

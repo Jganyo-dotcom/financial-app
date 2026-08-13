@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Calculator,
 } from "lucide-react";
+import { API_BASE_URL } from "../components/apiEnpoint";
 import "../css/BulkInventory.css";
 
 const CATEGORIES = [
@@ -39,6 +40,7 @@ export default function BulkInventory() {
   const [stagedItems, setStagedItems] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notification, setNotification] = useState(null);
+  const token = localStorage.getItem("token")
 
   // Form Input Change Handler
   const handleChange = (e) => {
@@ -144,7 +146,7 @@ export default function BulkInventory() {
   );
   const batchTotalProfit = batchTotalRevenue - batchTotalCost;
 
-  // Final Submit to Backend
+  // Final Submit to Backend via Fetch API
   const handleBackendImport = async () => {
     if (stagedItems.length === 0) return;
 
@@ -165,8 +167,21 @@ export default function BulkInventory() {
         })),
       };
 
-      // Simulated network sync delay
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const response = await fetch(`${API_BASE_URL}/api/product/products`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization":`Bearer ${token}`
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || "Failed to sync inventory with backend server.",
+        );
+      }
 
       triggerNotification(
         "success",
@@ -176,7 +191,7 @@ export default function BulkInventory() {
     } catch (err) {
       triggerNotification(
         "error",
-        "Failed to sync inventory with backend server.",
+        err.message || "Failed to sync inventory with backend server.",
       );
     } finally {
       setIsSubmitting(false);

@@ -4,17 +4,33 @@ import { Menu, X, Store } from "lucide-react";
 import Sidebar from "./Sidebar";
 import "./Sidebar.css";
 
-export default function DashboardLayout({ user, onLogout }) {
+export default function DashboardLayout({ onLogout }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
 
-  // Apply Light/Dark attribute to HTML root
+  // 1. Initialize user info directly from localStorage safely
+  const [localStorageUser] = useState(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  // 2. Initialize company info directly from localStorage safely
+  const [localStorageCompany] = useState(() => {
+    const savedCompany = localStorage.getItem("company");
+    return savedCompany ? JSON.parse(savedCompany) : null;
+  });
+
+  // 3. Initialize dark mode state by checking localStorage (defaults to dark mode)
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme ? savedTheme === "dark" : true;
+  });
+
+  // Apply theme attribute and save changes to localStorage automatically
   useEffect(() => {
-    document.documentElement.setAttribute(
-      "data-theme",
-      isDarkMode ? "dark" : "light",
-    );
+    const themeValue = isDarkMode ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", themeValue);
+    localStorage.setItem("theme", themeValue);
   }, [isDarkMode]);
 
   return (
@@ -38,13 +54,17 @@ export default function DashboardLayout({ user, onLogout }) {
           <div className="brand-icon-box">
             <Store size={16} />
           </div>
-          <span className="brand-name">{user?.companyName || "ALBIJO"}</span>
+          {/* Displaying Company name if available, fallback to user name or fallback string */}
+          <span className="brand-name">
+            {localStorageCompany?.name || localStorageUser?.name}
+          </span>
         </div>
       </header>
 
       {/* Modular Sidebar Component */}
       <Sidebar
-        user={user}
+        user={localStorageUser}
+        company={localStorageCompany}
         onLogout={onLogout}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}

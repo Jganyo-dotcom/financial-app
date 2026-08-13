@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   UserPlus,
   Database,
@@ -9,30 +9,34 @@ import {
   Phone,
   Mail,
   MapPin,
-  DollarSign,
   Users,
   AlertCircle,
   Plus,
   X,
   ShoppingBag,
+  Pencil,
+  CreditCard,
+  Receipt,
+  DollarSign,
 } from "lucide-react";
 import "../css/CustomerEntry.css";
 
-// Vault Products Inventory Mock
-const VAULT_PRODUCTS = [
-  { id: "P-101", name: "Cement Bag 50kg (32.5R)", price: 85.0 },
-  { id: "P-102", name: "PVC Pipe 4-Inch (6m)", price: 45.0 },
-  { id: "P-103", name: "Emulsion Paint White (20L)", price: 280.0 },
-  { id: "P-104", name: "Roofing Nails (1kg pack)", price: 25.0 },
-  { id: "P-105", name: "High-Tensile Steel Rod 12mm", price: 65.0 },
-  { id: "P-106", name: "Copper Electrical Wire 2.5mm", price: 320.0 },
-];
+import { API_BASE_URL } from "../components/apiEnpoint";
 
 export default function CustomerEntry() {
+  const token = localStorage.getItem("token");
+
   // --- State Management ---
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [toast, setToast] = useState(null);
+
+  // Pencil edit state for Amount Paid
+  const [isEditingAmount, setIsEditingAmount] = useState(false);
+
+  // Dynamic Products State
+  const [products, setProducts] = useState([]);
 
   // Multi-Product Basket State
   const [selectedProductId, setSelectedProductId] = useState("");
@@ -43,7 +47,7 @@ export default function CustomerEntry() {
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
-    amountSpent: "",
+    amountSpent: "", // Amount actually paid / entered
     paymentMethod: "Cash",
     customerType: "Walk-in",
     email: "",
@@ -52,31 +56,55 @@ export default function CustomerEntry() {
   });
 
   // Staged Queue State
-  const [stagedCustomers, setStagedCustomers] = useState([
-    {
-      id: "CUST-1001",
-      fullName: "Kofi Mensah",
-      phone: "+233 24 123 4567",
-      items: [
-        {
-          id: "P-101",
-          name: "Cement Bag 50kg (32.5R)",
-          qty: 10,
-          unitPrice: 85.0,
-        },
-      ],
-      amountSpent: 850.0,
-      paymentMethod: "Mobile Money",
-      customerType: "Regular",
-      email: "kofi.mensah@email.com",
-      address: "Accra, Ghana",
-      notes: "Express delivery required",
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    },
-  ]);
+  const [stagedCustomers, setStagedCustomers] = useState([]);
+
+  // --- Payment Modal State ---
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedCustomerForPayment, setSelectedCustomerForPayment] =
+    useState(null);
+  const [paymentRecord, setPaymentRecord] = useState({
+    amount: "",
+    method: "Cash",
+    notes: "",
+  });
+
+  // --- Fetch Products from Backend on Mount ---
+  useEffect(() => {
+    const fetchInventoryProducts = async () => {
+      setIsLoadingProducts(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/product/products`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+          const fetchedData = Array.isArray(result)
+            ? result
+            : result.products || result.data || [];
+          setProducts(fetchedData);
+        } else {
+          showToastNotification(
+            result.message || "Failed to load products from database.",
+            "error",
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        showToastNotification(
+          "Unable to reach backend server for products.",
+          "error",
+        );
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+
+    fetchInventoryProducts();
+  }, [token]);
 
   // Handle Input Changes
   const handleInputChange = (e) => {
@@ -84,37 +112,52 @@ export default function CustomerEntry() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Add Item to Basket
-  const handleAddItemToBasket = () => {
-    if (!selectedProductId) return;
-
-    const vaultItem = VAULT_PRODUCTS.find((p) => p.id === selectedProductId);
-    if (!vaultItem) return;
-
-    const existingIndex = basket.findIndex((i) => i.id === vaultItem.id);
-    let updatedBasket = [...basket];
-
-    if (existingIndex > -1) {
-      updatedBasket[existingIndex].qty += parseInt(quantity, 10);
-    } else {
-      updatedBasket.push({
-        id: vaultItem.id,
-        name: vaultItem.name,
-        qty: parseInt(quantity, 10),
-        unitPrice: vaultItem.price,
-      });
-    }
-
-    setBasket(updatedBasket);
-
-    // Auto-calculate Total Amount
+  // Recalculate auto-total helper
+  const updateAutoTotal = (updatedBasket) => {
     const newTotal = updatedBasket.reduce(
       (sum, item) => sum + item.qty * item.unitPrice,
       0,
     );
-    setFormData((prev) => ({ ...prev, amountSpent: newTotal.toFixed(2) }));
+    if (!isEditingAmount) {
+      setFormData((prev) => ({
+        ...prev,
+        amountSpent: newTotal ? newTotal.toFixed(2) : "",
+      }));
+    }
+  };
 
-    // Reset Selector
+  // Add Item to Basket
+  const handleAddItemToBasket = () => {
+    if (!selectedProductId) return;
+
+    const selectedItem = products.find(
+      (p) => (p._id || p.id) === selectedProductId,
+    );
+    if (!selectedItem) return;
+
+    const productId = selectedItem._id || selectedItem.id;
+    const existingIndex = basket.findIndex((i) => i.id === productId);
+    let updatedBasket = [...basket];
+
+    if (existingIndex > -1) {
+      updatedBasket[existingIndex] = {
+        ...updatedBasket[existingIndex],
+        qty: updatedBasket[existingIndex].qty + parseInt(quantity, 10),
+      };
+    } else {
+      updatedBasket.push({
+        id: productId,
+        product: productId,
+        name: selectedItem.name || selectedItem.title || "Product",
+        qty: parseInt(quantity, 10),
+        unitPrice: Number(selectedItem.unitPrice || selectedItem.price || 0),
+      });
+    }
+
+    setBasket(updatedBasket);
+    updateAutoTotal(updatedBasket);
+
+    // Reset selector
     setSelectedProductId("");
     setQuantity(1);
   };
@@ -123,15 +166,7 @@ export default function CustomerEntry() {
   const handleRemoveFromBasket = (productId) => {
     const updatedBasket = basket.filter((item) => item.id !== productId);
     setBasket(updatedBasket);
-
-    const newTotal = updatedBasket.reduce(
-      (sum, item) => sum + item.qty * item.unitPrice,
-      0,
-    );
-    setFormData((prev) => ({
-      ...prev,
-      amountSpent: newTotal ? newTotal.toFixed(2) : "",
-    }));
+    updateAutoTotal(updatedBasket);
   };
 
   // Trigger Toast Alert
@@ -140,6 +175,14 @@ export default function CustomerEntry() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  // Calculations for current form entry
+  const currentBasketTotal = basket.reduce(
+    (sum, item) => sum + item.qty * item.unitPrice,
+    0,
+  );
+  const currentAmountPaid = parseFloat(formData.amountSpent || 0);
+  const currentBalance = currentBasketTotal - currentAmountPaid;
+
   // Add Customer to Queue
   const handleAddToStage = (e) => {
     e.preventDefault();
@@ -147,12 +190,9 @@ export default function CustomerEntry() {
     if (
       !formData.fullName.trim() ||
       !formData.phone.trim() ||
-      !formData.amountSpent
+      formData.amountSpent === ""
     ) {
-      showToastNotification(
-        "Please fill in Name, Phone, and Amount spent.",
-        "error",
-      );
+      showToastNotification("Please fill in Name, Phone, and Amount.", "error");
       return;
     }
 
@@ -160,7 +200,9 @@ export default function CustomerEntry() {
       id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
       ...formData,
       items: basket,
-      amountSpent: parseFloat(formData.amountSpent),
+      amountSpent: currentAmountPaid, // Amount Paid by customer
+      totalAmount: parseFloat(currentBasketTotal.toFixed(2)),
+      amountOwe: currentBalance > 0 ? parseFloat(currentBalance.toFixed(2)) : 0,
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -181,6 +223,7 @@ export default function CustomerEntry() {
       notes: "",
     });
     setBasket([]);
+    setIsEditingAmount(false);
 
     showToastNotification(
       `Added ${newStagedCustomer.fullName} to review queue!`,
@@ -193,7 +236,67 @@ export default function CustomerEntry() {
     showToastNotification("Customer removed from review queue.", "error");
   };
 
-  // Bulk Sync
+  // Open Record Payment Modal
+  const handleOpenPaymentModal = (customer) => {
+    setSelectedCustomerForPayment(customer);
+    setPaymentRecord({
+      amount: customer.amountOwe > 0 ? customer.amountOwe.toString() : "",
+      method: "Cash",
+      notes: "",
+    });
+    setIsPaymentModalOpen(true);
+  };
+
+  // Close Record Payment Modal
+  const handleClosePaymentModal = () => {
+    setIsPaymentModalOpen(false);
+    setSelectedCustomerForPayment(null);
+  };
+
+  // Submit Additional Payment
+  const handleSaveRecordedPayment = (e) => {
+    e.preventDefault();
+    if (!selectedCustomerForPayment) return;
+
+    const addedAmount = parseFloat(paymentRecord.amount);
+    if (isNaN(addedAmount) || addedAmount <= 0) {
+      showToastNotification("Please enter a valid payment amount.", "error");
+      return;
+    }
+
+    setStagedCustomers((prev) =>
+      prev.map((cust) => {
+        if (cust.id === selectedCustomerForPayment.id) {
+          const newAmountPaid = cust.amountSpent + addedAmount;
+          const newAmountOwe = Math.max(0, cust.totalAmount - newAmountPaid);
+          const updatedNotes = paymentRecord.notes
+            ? `${cust.notes ? cust.notes + " | " : ""}Paid GH₵${addedAmount.toFixed(
+                2,
+              )} via ${paymentRecord.method}: ${paymentRecord.notes}`
+            : cust.notes;
+
+          return {
+            ...cust,
+            amountSpent: parseFloat(newAmountPaid.toFixed(2)),
+            amountOwe: parseFloat(newAmountOwe.toFixed(2)),
+            paymentMethod: paymentRecord.method,
+            notes: updatedNotes,
+          };
+        }
+        return cust;
+      }),
+    );
+
+    showToastNotification(
+      `Recorded payment of GH₵${addedAmount.toFixed(2)} for ${
+        selectedCustomerForPayment.fullName
+      }!`,
+    );
+
+    handleClosePaymentModal();
+  };
+
+  // Bulk Database Sync
   const handleSyncDatabase = async () => {
     if (stagedCustomers.length === 0) {
       showToastNotification("No staged records to sync!", "error");
@@ -202,14 +305,29 @@ export default function CustomerEntry() {
 
     setIsSyncing(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const response = await fetch(`${API_BASE_URL}/api/customer/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ customers: stagedCustomers }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to sync records.");
+      }
+
       showToastNotification(
-        `Synced ${stagedCustomers.length} record(s) to Database!`,
+        `Successfully synced ${stagedCustomers.length} record(s) to Database!`,
         "success",
       );
       setStagedCustomers([]);
     } catch (err) {
-      showToastNotification("Database sync failed.", "error");
+      console.error("Sync Error:", err);
+      showToastNotification(err.message || "Database sync failed.", "error");
     } finally {
       setIsSyncing(false);
     }
@@ -222,7 +340,6 @@ export default function CustomerEntry() {
 
   return (
     <div className="customer-entry-page dark-theme">
-      {/* Toast Notification */}
       {toast && (
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === "success" ? (
@@ -234,7 +351,6 @@ export default function CustomerEntry() {
         </div>
       )}
 
-      {/* Header */}
       <header className="page-header">
         <div>
           <h2>
@@ -251,8 +367,10 @@ export default function CustomerEntry() {
             <span className="pill-value">{stagedCustomers.length} Users</span>
           </div>
           <div className="stat-pill highlight">
-            <span className="pill-label">Total Amount</span>
-            <span className="pill-value">${totalStagedRevenue.toFixed(2)}</span>
+            <span className="pill-label">Total Amount Paid</span>
+            <span className="pill-value">
+              GH₵{totalStagedRevenue.toFixed(2)}
+            </span>
           </div>
         </div>
       </header>
@@ -265,7 +383,6 @@ export default function CustomerEntry() {
         </div>
 
         <form onSubmit={handleAddToStage} className="customer-form">
-          {/* Row 1: Name & Phone */}
           <div className="form-row">
             <div className="form-group">
               <label>Full Name *</label>
@@ -297,23 +414,34 @@ export default function CustomerEntry() {
             </div>
           </div>
 
-          {/* Row 2: Vault Multi-Product Selection */}
+          {/* Product Selection */}
           <div className="form-group vault-section">
             <label>
-              <ShoppingBag size={15} /> Select Purchased Vault Items
+              <ShoppingBag size={15} /> Select Purchased Items
             </label>
             <div className="vault-picker-row">
               <select
                 value={selectedProductId}
                 onChange={(e) => setSelectedProductId(e.target.value)}
                 className="vault-dropdown"
+                disabled={isLoadingProducts || products.length === 0}
               >
-                <option value="">-- Choose item from Vault --</option>
-                {VAULT_PRODUCTS.map((prod) => (
-                  <option key={prod.id} value={prod.id}>
-                    {prod.name} (${prod.price.toFixed(2)})
-                  </option>
-                ))}
+                <option value="">
+                  {isLoadingProducts
+                    ? "Loading products from backend..."
+                    : products.length === 0
+                      ? "No products found in database"
+                      : "-- Choose item from Inventory --"}
+                </option>
+                {products.map((prod) => {
+                  const pId = prod._id || prod.id;
+                  const price = Number(prod.unitPrice || prod.price || 0);
+                  return (
+                    <option key={pId} value={pId}>
+                      {prod.name || prod.title} (GH₵{price.toFixed(2)})
+                    </option>
+                  );
+                })}
               </select>
 
               <div className="qty-input-wrapper">
@@ -339,13 +467,13 @@ export default function CustomerEntry() {
               </button>
             </div>
 
-            {/* Basket Chips Display */}
+            {/* Basket Display */}
             {basket.length > 0 && (
               <div className="basket-chips">
                 {basket.map((item) => (
                   <div key={item.id} className="basket-chip">
                     <span>
-                      <strong>{item.qty}x</strong> {item.name} ($
+                      <strong>{item.qty}x</strong> {item.name} (GH₵
                       {(item.qty * item.unitPrice).toFixed(2)})
                     </span>
                     <button
@@ -361,12 +489,36 @@ export default function CustomerEntry() {
             )}
           </div>
 
-          {/* Row 3: Amount & Payment Method */}
+          {/* Transaction Financial Summary Badge */}
+          {basket.length > 0 && (
+            <div className="payment-summary-bar">
+              <div>
+                Total Bill: <strong>GH₵{currentBasketTotal.toFixed(2)}</strong>
+              </div>
+              <div>
+                Paid: <strong>GH₵{currentAmountPaid.toFixed(2)}</strong>
+              </div>
+              <div>
+                {currentBalance > 0 ? (
+                  <span className="debt-text">
+                    Balance Due (Debt): GH₵{currentBalance.toFixed(2)}
+                  </span>
+                ) : currentBalance < 0 ? (
+                  <span className="change-text">
+                    Change Due: GH₵{Math.abs(currentBalance).toFixed(2)}
+                  </span>
+                ) : (
+                  <span className="paid-text">Fully Paid</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Row 3: Amount Paid */}
           <div className="form-row three-col">
             <div className="form-group">
-              <label>Total Amount ($) *</label>
-              <div className="input-wrapper">
-                <DollarSign size={16} className="input-icon" />
+              <label>Amount Paid (GH₵) *</label>
+              <div className="input-wrapper editable-amount-wrapper">
                 <input
                   type="number"
                   step="0.01"
@@ -374,8 +526,22 @@ export default function CustomerEntry() {
                   placeholder="0.00"
                   value={formData.amountSpent}
                   onChange={handleInputChange}
+                  readOnly={!isEditingAmount}
+                  style={{ paddingLeft: "12px" }}
                   required
                 />
+                <button
+                  type="button"
+                  className={`pencil-btn ${isEditingAmount ? "active" : ""}`}
+                  onClick={() => setIsEditingAmount(!isEditingAmount)}
+                  title={
+                    isEditingAmount
+                      ? "Lock paid amount"
+                      : "Edit paid amount manually"
+                  }
+                >
+                  <Pencil size={15} />
+                </button>
               </div>
             </div>
 
@@ -472,7 +638,6 @@ export default function CustomerEntry() {
             )}
           </div>
 
-          {/* Action Row with Compact Button */}
           <div className="form-action-row">
             <button type="submit" className="stage-customer-btn">
               <UserPlus size={18} />
@@ -511,7 +676,7 @@ export default function CustomerEntry() {
             <Users size={48} className="empty-icon" />
             <h4>No Customers in Queue</h4>
             <p>
-              Add customer purchases above. They will collect here for final
+              Add customer purchases above to collect them here for final
               review.
             </p>
           </div>
@@ -524,9 +689,9 @@ export default function CustomerEntry() {
                   <th>Contact</th>
                   <th>Items Purchased</th>
                   <th>Payment</th>
-                  <th>Amount</th>
+                  <th>Total / Paid / Debt</th>
                   <th>Details</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -558,7 +723,21 @@ export default function CustomerEntry() {
                       <span className="tag-badge">{cust.paymentMethod}</span>
                     </td>
                     <td className="amount-cell">
-                      ${cust.amountSpent.toFixed(2)}
+                      <div>Total: GH₵{(cust.totalAmount || 0).toFixed(2)}</div>
+                      <div>
+                        Paid: <strong>GH₵{cust.amountSpent.toFixed(2)}</strong>
+                      </div>
+                      {cust.amountOwe > 0 && (
+                        <div
+                          style={{
+                            color: "#ef4444",
+                            fontSize: "0.85rem",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          Debt: GH₵{cust.amountOwe.toFixed(2)}
+                        </div>
+                      )}
                     </td>
                     <td className="extra-info-cell">
                       {cust.email && (
@@ -571,13 +750,37 @@ export default function CustomerEntry() {
                       )}
                     </td>
                     <td>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleRemoveStaged(cust.id)}
-                        title="Remove from queue"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="action-buttons-group">
+                        <button
+                          className="record-pay-btn"
+                          onClick={() => handleOpenPaymentModal(cust)}
+                          title="Record Payment"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            padding: "6px 10px",
+                            backgroundColor: "#10b981",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "0.8rem",
+                            fontWeight: "500",
+                            marginRight: "6px",
+                          }}
+                        >
+                          <CreditCard size={14} /> Pay
+                        </button>
+
+                        <button
+                          className="delete-btn"
+                          onClick={() => handleRemoveStaged(cust.id)}
+                          title="Remove from queue"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -586,6 +789,269 @@ export default function CustomerEntry() {
           </div>
         )}
       </section>
+
+      {/* --- RECORD PAYMENT MODAL --- */}
+      {isPaymentModalOpen && selectedCustomerForPayment && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "16px",
+          }}
+          onClick={handleClosePaymentModal}
+        >
+          <div
+            className="modal-content dark-card"
+            style={{
+              backgroundColor: "#1e293b",
+              color: "#f8fafc",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "480px",
+              width: "100%",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.5)",
+              border: "1px solid #334155",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderBottom: "1px solid #334155",
+                paddingBottom: "12px",
+                marginBottom: "16px",
+              }}
+            >
+              <h3
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  margin: 0,
+                  fontSize: "1.2rem",
+                }}
+              >
+                <Receipt size={20} style={{ color: "#10b981" }} /> Record
+                Payment
+              </h3>
+              <button
+                type="button"
+                onClick={handleClosePaymentModal}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Customer Brief */}
+            <div
+              style={{
+                backgroundColor: "#0f172a",
+                padding: "12px 16px",
+                borderRadius: "8px",
+                marginBottom: "16px",
+                fontSize: "0.9rem",
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: "bold",
+                  marginBottom: "4px",
+                  color: "#38bdf8",
+                }}
+              >
+                {selectedCustomerForPayment.fullName} (
+                {selectedCustomerForPayment.phone})
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  color: "#cbd5e1",
+                }}
+              >
+                <span>
+                  Total Bill: GH₵
+                  {(selectedCustomerForPayment.totalAmount || 0).toFixed(2)}
+                </span>
+                <span>
+                  Paid: GH₵
+                  {(selectedCustomerForPayment.amountSpent || 0).toFixed(2)}
+                </span>
+              </div>
+              <div
+                style={{
+                  marginTop: "4px",
+                  fontWeight: "bold",
+                  color: "#f87171",
+                }}
+              >
+                Remaining Debt: GH₵
+                {(selectedCustomerForPayment.amountOwe || 0).toFixed(2)}
+              </div>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveRecordedPayment}>
+              <div className="form-group" style={{ marginBottom: "12px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  Payment Amount (GH₵) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0.00"
+                  value={paymentRecord.amount}
+                  onChange={(e) =>
+                    setPaymentRecord({
+                      ...paymentRecord,
+                      amount: e.target.value,
+                    })
+                  }
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    backgroundColor: "#0f172a",
+                    border: "1px solid #334155",
+                    borderRadius: "6px",
+                    color: "#fff",
+                    fontSize: "1rem",
+                  }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: "12px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  Payment Method
+                </label>
+                <select
+                  value={paymentRecord.method}
+                  onChange={(e) =>
+                    setPaymentRecord({
+                      ...paymentRecord,
+                      method: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    backgroundColor: "#0f172a",
+                    border: "1px solid #334155",
+                    borderRadius: "6px",
+                    color: "#fff",
+                  }}
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="Mobile Money">Mobile Money</option>
+                  <option value="Card">Credit/Debit Card</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  Payment Notes / Reference (Optional)
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="e.g. Part payment received via MoMo..."
+                  value={paymentRecord.notes}
+                  onChange={(e) =>
+                    setPaymentRecord({
+                      ...paymentRecord,
+                      notes: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    backgroundColor: "#0f172a",
+                    border: "1px solid #334155",
+                    borderRadius: "6px",
+                    color: "#fff",
+                    resize: "vertical",
+                  }}
+                ></textarea>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "10px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handleClosePaymentModal}
+                  style={{
+                    padding: "10px 16px",
+                    backgroundColor: "#334155",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: "10px 16px",
+                    backgroundColor: "#10b981",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Save Payment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
