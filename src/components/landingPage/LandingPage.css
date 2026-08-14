@@ -8,14 +8,15 @@
   --bg-surface: #ffffff;
   --bg-surface-subtle: #f1f5f9;
   --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
   --border-color: #e2e8f0;
-  
+
   --primary-color: #4f46e5;
   --primary-hover: #4338ca;
   --primary-light: #e0e7ff;
   --primary-text: #ffffff;
+  --primary-accent: #4f46e5;
 
   --emerald-bg: #ecfdf5;
   --emerald-border: #a7f3d0;
@@ -25,8 +26,11 @@
   --amber-border: #fde68a;
   --amber-text: #d97706;
 
+  --blue-text: #2563eb;
+
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
@@ -36,25 +40,82 @@
   --bg-surface: #1e293b;
   --bg-surface-subtle: #334155;
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
   --border-color: #334155;
 
   --primary-color: #6366f1;
   --primary-hover: #4f46e5;
-  --primary-light: rgba(99, 102, 241, 0.15);
-  
-  --emerald-bg: rgba(16, 185, 129, 0.12);
-  --emerald-border: rgba(16, 185, 129, 0.25);
+  --primary-light: rgba(99, 102, 241, 0.2);
+  --primary-accent: #a5b4fc; /* High contrast pastel indigo */
+
+  --emerald-bg: rgba(16, 185, 129, 0.15);
+  --emerald-border: rgba(16, 185, 129, 0.3);
   --emerald-text: #34d399;
 
-  --amber-bg: rgba(245, 158, 11, 0.12);
-  --amber-border: rgba(245, 158, 11, 0.25);
+  --amber-bg: rgba(245, 158, 11, 0.15);
+  --amber-border: rgba(245, 158, 11, 0.3);
   --amber-text: #fbbf24;
+
+  --blue-text: #60a5fa;
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* EXPLICIT DARK MODE TEXT CONTRAST OVERRIDES */
+[data-theme="dark"] .albijo-hero-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .albijo-hero-title span {
+  color: #a5b4fc !important;
+}
+
+[data-theme="dark"] .albijo-hero-subtitle {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .albijo-section-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .albijo-section-subtitle {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .albijo-feature-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .albijo-feature-desc {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .albijo-btn-outline {
+  color: #f8fafc !important;
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .albijo-btn-outline:hover {
+  background-color: #334155;
+  border-color: #64748b;
+}
+
+/* Theme-Aware Icon Utility Classes */
+.icon-indigo {
+  color: var(--primary-accent);
+}
+.icon-emerald {
+  color: var(--emerald-text);
+}
+.icon-amber {
+  color: var(--amber-text);
+}
+.icon-blue {
+  color: var(--blue-text);
 }
 
 /* Base Styles */
@@ -62,8 +123,12 @@
   min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
   line-height: 1.5;
 }
 
@@ -94,6 +159,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  cursor: pointer;
 }
 
 .albijo-logo-badge {
@@ -109,7 +175,7 @@
   font-size: 1.5rem;
   font-weight: 900;
   letter-spacing: -0.025em;
-  color: var(--primary-color);
+  color: var(--primary-accent);
 }
 
 .albijo-custom-logo {
@@ -135,7 +201,7 @@
 }
 
 .albijo-nav-link:hover {
-  color: var(--primary-color);
+  color: var(--primary-accent);
 }
 
 .albijo-nav-actions {
@@ -164,7 +230,7 @@
 
 .albijo-btn-primary {
   background-color: var(--primary-color);
-  color: var(--primary-text);
+  color: #ffffff;
   border: none;
   padding: 0.65rem 1.25rem;
   border-radius: 0.5rem;
@@ -175,7 +241,9 @@
   align-items: center;
   gap: 0.5rem;
   box-shadow: var(--shadow-sm);
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
 }
 
 .albijo-btn-primary:hover {
@@ -201,11 +269,14 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: background-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .albijo-btn-outline:hover {
   background-color: var(--bg-surface-subtle);
+  border-color: var(--text-muted);
 }
 
 /* Hero Section */
@@ -217,7 +288,7 @@
 .albijo-badge {
   display: inline-block;
   background-color: var(--primary-light);
-  color: var(--primary-color);
+  color: var(--primary-accent);
   font-size: 0.8125rem;
   font-weight: 700;
   padding: 0.35rem 0.875rem;
@@ -225,6 +296,7 @@
   margin-bottom: 1.5rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .albijo-hero-title {
@@ -233,10 +305,11 @@
   line-height: 1.15;
   letter-spacing: -0.03em;
   margin-bottom: 1.5rem;
+  color: var(--text-primary);
 }
 
 .albijo-hero-title span {
-  color: var(--primary-color);
+  color: var(--primary-accent);
 }
 
 .albijo-hero-subtitle {
@@ -286,7 +359,7 @@
 
 .albijo-stat-card.indigo {
   background-color: var(--primary-light);
-  border-color: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.3);
 }
 
 .albijo-stat-card.emerald {
@@ -307,25 +380,38 @@
   margin-bottom: 0.25rem;
 }
 
-.albijo-stat-card.indigo .albijo-stat-label { color: var(--primary-color); }
-.albijo-stat-card.emerald .albijo-stat-label { color: var(--emerald-text); }
-.albijo-stat-card.amber .albijo-stat-label { color: var(--amber-text); }
+.albijo-stat-card.indigo .albijo-stat-label {
+  color: var(--primary-accent);
+}
+.albijo-stat-card.emerald .albijo-stat-label {
+  color: var(--emerald-text);
+}
+.albijo-stat-card.amber .albijo-stat-label {
+  color: var(--amber-text);
+}
 
 .albijo-stat-value {
   font-size: 1.75rem;
   font-weight: 800;
 }
 
-.albijo-stat-card.indigo .albijo-stat-value { color: var(--primary-color); }
-.albijo-stat-card.emerald .albijo-stat-value { color: var(--emerald-text); }
-.albijo-stat-card.amber .albijo-stat-value { color: var(--amber-text); }
+.albijo-stat-card.indigo .albijo-stat-value {
+  color: var(--primary-accent);
+}
+.albijo-stat-card.emerald .albijo-stat-value {
+  color: var(--emerald-text);
+}
+.albijo-stat-card.amber .albijo-stat-value {
+  color: var(--amber-text);
+}
 
 .albijo-preview-footer {
   border-top: 1px solid var(--border-color);
   padding-top: 1rem;
   display: flex;
   justify-content: space-between;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  font-weight: 600;
   color: var(--text-muted);
 }
 
@@ -344,6 +430,7 @@
   font-weight: 800;
   margin-bottom: 0.75rem;
   letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .albijo-section-subtitle {
@@ -363,12 +450,14 @@
   padding: 1.75rem;
   border-radius: 1rem;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .albijo-feature-card:hover {
   transform: translateY(-4px);
-  border-color: var(--primary-color);
+  border-color: var(--primary-accent);
 }
 
 .albijo-feature-icon {
@@ -380,6 +469,7 @@
   font-size: 1.125rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
+  color: var(--text-primary);
 }
 
 .albijo-feature-desc {
@@ -429,6 +519,7 @@
   margin-bottom: 0.875rem;
   font-weight: 600;
   font-size: 0.9375rem;
+  color: var(--text-primary);
 }
 
 .albijo-check-icon {

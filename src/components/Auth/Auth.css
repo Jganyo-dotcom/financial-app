@@ -1,31 +1,131 @@
 /* ==========================================================================
-   AUTHENTICATION STYLES (LOGIN & REGISTER)
+   AUTHENTICATION STYLES (DYNAMIC LIGHT & DARK THEME)
    ========================================================================== */
 
+/* 1. LIGHT MODE DEFAULTS */
+:root {
+  --auth-bg-main: #f8fafc;
+  --auth-card-bg: #ffffff;
+  --auth-card-border: #e2e8f0;
+  --auth-title-color: #0f172a;
+  --auth-subtitle-color: #64748b;
+  --auth-label-color: #334155;
+  --auth-input-bg: #f8fafc;
+  --auth-input-border: #cbd5e1;
+  --auth-input-text: #0f172a;
+  --auth-input-placeholder: #94a3b8;
+  --auth-icon-color: #64748b;
+  --auth-autofill-bg: #f8fafc;
+  --auth-autofill-text: #0f172a;
+  --auth-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+
+  --auth-primary: #6366f1;
+  --auth-primary-hover: #4f46e5;
+  --auth-link-color: #4f46e5;
+  --auth-link-hover: #3730a3;
+}
+
+/* 2. DARK MODE OVERRIDES (Triggers via [data-theme="dark"], .dark, or System Preferences) */
+[data-theme="dark"],
+.dark {
+  --auth-bg-main: #0f172a;
+  --auth-card-bg: #1e293b;
+  --auth-card-border: #334155;
+  --auth-title-color: #ffffff;
+  --auth-subtitle-color: #94a3b8;
+  --auth-label-color: #f1f5f9;
+  --auth-input-bg: #0f172a;
+  --auth-input-border: #334155;
+  --auth-input-text: #ffffff;
+  --auth-input-placeholder: #64748b;
+  --auth-icon-color: #94a3b8;
+  --auth-autofill-bg: #0f172a;
+  --auth-autofill-text: #ffffff;
+  --auth-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+
+  --auth-primary: #6366f1;
+  --auth-primary-hover: #4f46e5;
+  --auth-link-color: #a5b4fc;
+  --auth-link-hover: #c7d2fe;
+}
+
+/* Auto-detect OS Dark Mode if no data-theme attribute is present */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --auth-bg-main: #0f172a;
+    --auth-card-bg: #1e293b;
+    --auth-card-border: #334155;
+    --auth-title-color: #ffffff;
+    --auth-subtitle-color: #94a3b8;
+    --auth-label-color: #f1f5f9;
+    --auth-input-bg: #0f172a;
+    --auth-input-border: #334155;
+    --auth-input-text: #ffffff;
+    --auth-input-placeholder: #64748b;
+    --auth-icon-color: #94a3b8;
+    --auth-autofill-bg: #0f172a;
+    --auth-autofill-text: #ffffff;
+    --auth-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+
+    --auth-link-color: #a5b4fc;
+    --auth-link-hover: #c7d2fe;
+  }
+}
+
+/* Base Container */
 .auth-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-primary, #0f172a);
-  color: var(--text-primary, #f8fafc);
+  background-color: var(--auth-bg-main);
+  color: var(--auth-title-color);
   padding: 1.5rem;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
+/* Card Wrapper */
 .auth-card {
   width: 100%;
   max-width: 440px;
-  background-color: var(--bg-surface, #1e293b);
-  border: 1px solid var(--border-color, #334155);
+  background-color: var(--auth-card-bg);
+  border: 1px solid var(--auth-card-border);
   border-radius: 1.25rem;
   padding: 2.5rem 2rem;
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.3),
-    0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--auth-shadow);
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
+/* Navigation Back Button */
+.auth-back-btn {
+  background: transparent;
+  border: none;
+  color: var(--auth-subtitle-color);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  margin-bottom: 1.25rem;
+  transition: color 0.2s ease;
+}
+
+.auth-back-btn:hover {
+  color: var(--auth-title-color);
+}
+
+/* Header & Branding */
 .auth-header {
   text-align: center;
   margin-bottom: 2rem;
@@ -40,7 +140,7 @@
 }
 
 .auth-logo-badge {
-  background-color: #6366f1;
+  background-color: var(--auth-primary);
   color: #ffffff;
   font-weight: 800;
   font-size: 1.125rem;
@@ -51,22 +151,24 @@
 .auth-brand-name {
   font-size: 1.35rem;
   font-weight: 900;
-  color: #6366f1;
+  color: var(--auth-primary);
   letter-spacing: -0.02em;
 }
 
 .auth-title {
   font-size: 1.625rem;
   font-weight: 800;
-  color: var(--text-primary, #f8fafc);
+  color: var(--auth-title-color);
   margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
 }
 
 .auth-subtitle {
   font-size: 0.875rem;
-  color: var(--text-secondary, #94a3b8);
+  color: var(--auth-subtitle-color);
 }
 
+/* Form Structure */
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -80,10 +182,12 @@
   text-align: left;
 }
 
+/* Form Field Labels */
 .auth-label {
-  font-size: 0.8125rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-secondary, #cbd5e1);
+  color: var(--auth-label-color);
+  letter-spacing: 0.01em;
 }
 
 .auth-input-wrapper {
@@ -95,26 +199,36 @@
 .auth-input-icon {
   position: absolute;
   left: 0.875rem;
-  color: #64748b;
+  color: var(--auth-icon-color);
   pointer-events: none;
+  z-index: 2;
 }
 
+/* Input Typing Field */
 .auth-input {
   width: 100%;
   padding: 0.75rem 0.875rem 0.75rem 2.6rem;
-  background-color: var(--bg-primary, #0f172a);
-  border: 1px solid var(--border-color, #334155);
+  background-color: var(--auth-input-bg);
+  border: 1px solid var(--auth-input-border);
   border-radius: 0.625rem;
-  color: var(--text-primary, #f8fafc);
+  color: var(--auth-input-text);
   font-size: 0.9375rem;
+  font-weight: 500;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.auth-input::placeholder {
+  color: var(--auth-input-placeholder);
+  opacity: 1;
 }
 
 .auth-input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--auth-primary);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
@@ -123,20 +237,35 @@
   cursor: not-allowed;
 }
 
+/* AUTOFILL DYNAMIC OVERRIDE */
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--auth-autofill-text) !important;
+  -webkit-box-shadow: 0 0 0 30px var(--auth-autofill-bg) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Password Eye Button */
 .auth-password-toggle {
   position: absolute;
   right: 0.875rem;
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--auth-icon-color);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: color 0.2s ease;
+  z-index: 2;
 }
 
 .auth-password-toggle:hover:not(:disabled) {
-  color: #94a3b8;
+  color: var(--auth-title-color);
 }
 
 .auth-password-toggle:disabled {
@@ -144,8 +273,9 @@
   cursor: not-allowed;
 }
 
+/* Submit Action Button */
 .auth-submit-btn {
-  background-color: #6366f1;
+  background-color: var(--auth-primary);
   color: #ffffff;
   border: none;
   padding: 0.875rem;
@@ -165,57 +295,38 @@
 }
 
 .auth-submit-btn:hover:not(:disabled) {
-  background-color: #4f46e5;
+  background-color: var(--auth-primary-hover);
 }
 
-/* Active submit loading state */
 .auth-submit-btn:disabled {
   opacity: 0.75;
   cursor: not-allowed;
-  background-color: #4f46e5;
+  background-color: var(--auth-primary-hover);
 }
 
+/* Footer Links */
 .auth-footer {
   margin-top: 1.75rem;
   text-align: center;
   font-size: 0.875rem;
-  color: var(--text-secondary, #94a3b8);
+  color: var(--auth-subtitle-color);
 }
 
 .auth-link {
-  color: #818cf8;
+  color: var(--auth-link-color);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  margin-left: 0.25rem;
-}
-
-.auth-link:hover {
-  text-decoration: underline;
-}
-
-.auth-back-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary, #94a3b8);
-  font-size: 0.8125rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  cursor: pointer;
-  margin-bottom: 1.25rem;
+  margin-left: 0.35rem;
   transition: color 0.2s ease;
 }
 
-.auth-back-btn:hover {
-  color: #ffffff;
+.auth-link:hover {
+  color: var(--auth-link-hover);
+  text-decoration: underline;
 }
 
-/* ==========================================================================
-   ANIMATIONS
-   ========================================================================== */
-
-/* Keyframes to power Lucide's Loader2 spin animation */
+/* Keyframes for Loader */
 .animate-spin {
   animation: auth-spin 0.8s linear infinite;
 }

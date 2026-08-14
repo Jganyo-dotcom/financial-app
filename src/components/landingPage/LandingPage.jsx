@@ -104,9 +104,9 @@ export default function LandingPage({ onLaunchApp, onLoginClick }) {
                 title="Toggle Theme"
               >
                 {theme === "dark" ? (
-                  <Sun size={20} color="#fbbf24" />
+                  <Sun size={20} className="icon-amber" />
                 ) : (
-                  <Moon size={20} color="#64748b" />
+                  <Moon size={20} className="icon-indigo" />
                 )}
               </button>
 
@@ -205,22 +205,22 @@ export default function LandingPage({ onLaunchApp, onLoginClick }) {
 
             <div className="albijo-features-grid">
               <FeatureCard
-                icon={<Package size={32} color="#4f46e5" />}
+                icon={<Package size={32} className="icon-indigo" />}
                 title="Bulk Stock Entry"
                 description="Record bulk purchases with item costs, total unit counts, and automatically calculate profit margins per unit."
               />
               <FeatureCard
-                icon={<TrendingUp size={32} color="#059669" />}
+                icon={<TrendingUp size={32} className="icon-emerald" />}
                 title="Point-of-Sale Log"
                 description="Easily register customer purchases. Updates backend stock levels and daily revenue instantly."
               />
               <FeatureCard
-                icon={<FileText size={32} color="#2563eb" />}
+                icon={<FileText size={32} className="icon-blue" />}
                 title="Financial Statements"
                 description="One-click generation of revenue and sales statements right up to the current minute."
               />
               <FeatureCard
-                icon={<Bell size={32} color="#d97706" />}
+                icon={<Bell size={32} className="icon-amber" />}
                 title="Low Stock Alerts"
                 description="Automated system notifications and email alerts triggered as soon as stock levels drop."
               />
@@ -268,8 +268,8 @@ export default function LandingPage({ onLaunchApp, onLoginClick }) {
               <div className="albijo-whitelabel-card">
                 <BarChart3
                   size={48}
-                  color="#4f46e5"
-                  style={{ margin: "0 auto 1rem" }}
+                  className="icon-indigo"
+                  style={{ margin: "0 auto 1rem", display: "block" }}
                 />
                 <h3 className="albijo-feature-title">
                   Ready to build the dashboard?
