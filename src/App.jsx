@@ -19,9 +19,10 @@ import CustomerEntry from "./pages/CustomerEntry";
 import FinancialOverview from "./pages/FinancialOverview";
 import SalesRegisterLedger from "./pages/SalesRegisterLedger";
 import InventoryExpenseManager from "./pages/InventoryExpenseManager";
+import { API_BASE_URL } from "./components/apiEnpoint";
 
-// API Base URL - update with your actual backend URL if needed
-const API_BASE_URL = "http://localhost:5000/api";
+
+
 
 function AppRoutes() {
   const navigate = useNavigate();
