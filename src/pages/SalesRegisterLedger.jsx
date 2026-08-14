@@ -19,6 +19,9 @@ import {
   ChevronLeft,
   DollarSign,
   FileSpreadsheet,
+  Loader2,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import "../css/SalesRegisterLedger.css";
 import { API_BASE_URL } from "../components/apiEnpoint";
@@ -33,14 +36,26 @@ export default function SalesRegisterLedger() {
   const [customers, setCustomers] = useState([]);
   const [debtors, setDebtors] = useState([]);
 
-  // Search & Filter
+  // Loading States
+  const [isTxLoading, setIsTxLoading] = useState(false);
+  const [isCustomersLoading, setIsCustomersLoading] = useState(false);
+  const [isDebtorsLoading, setIsDebtorsLoading] = useState(false);
+  const [isReconciling, setIsReconciling] = useState(false);
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+
+  // Search & Filter States
   const [searchTerm, setSearchTerm] = useState("");
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [methodFilter, setMethodFilter] = useState("All");
 
-  // Pagination State
+  // Ledger Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 5;
+
+  // Customer Pagination State
+  const [customerPage, setCustomerPage] = useState(1);
+  const customerItemsPerPage = 5;
 
   // Drawer & Modal States
   const [selectedTx, setSelectedTx] = useState(null);
@@ -62,6 +77,7 @@ export default function SalesRegisterLedger() {
 
   // --- API FETCH HANDLERS ---
   const fetchTransactions = useCallback(async () => {
+    setIsTxLoading(true);
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/customer/?search=${encodeURIComponent(
@@ -79,7 +95,6 @@ export default function SalesRegisterLedger() {
       if (!response.ok) throw new Error("Failed to fetch transactions");
       const data = await response.json();
 
-      // Extract transaction array matching backend response format
       const txList = Array.isArray(data)
         ? data
         : Array.isArray(data.data)
@@ -90,10 +105,13 @@ export default function SalesRegisterLedger() {
     } catch (error) {
       console.error("Error fetching transactions:", error);
       setTransactions([]);
+    } finally {
+      setIsTxLoading(false);
     }
   }, [searchTerm, methodFilter, currentPage, itemsPerPage, token]);
 
   const fetchCustomers = useCallback(async () => {
+    setIsCustomersLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/customer/directory`, {
         headers: {
@@ -116,10 +134,13 @@ export default function SalesRegisterLedger() {
     } catch (error) {
       console.error("Error fetching customers:", error);
       setCustomers([]);
+    } finally {
+      setIsCustomersLoading(false);
     }
   }, [token]);
 
   const fetchDebtors = useCallback(async () => {
+    setIsDebtorsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/customer/debtors`, {
         headers: {
@@ -142,24 +163,42 @@ export default function SalesRegisterLedger() {
     } catch (error) {
       console.error("Error fetching debtors:", error);
       setDebtors([]);
+    } finally {
+      setIsDebtorsLoading(false);
     }
   }, [token]);
 
-  // Fetch transactions on search, filter, or page update
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
 
-  // Fetch initial directory data
   useEffect(() => {
     fetchCustomers();
     fetchDebtors();
   }, [fetchCustomers, fetchDebtors]);
 
-  // --- SAFE METRICS CALCULATIONS ---
+  // --- SAFE METRICS & FILTERED DATA CALCULATIONS ---
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
   const safeCustomers = Array.isArray(customers) ? customers : [];
   const safeDebtors = Array.isArray(debtors) ? debtors : [];
+
+  // Filter customers based on search term (Name or Phone)
+  const filteredCustomers = safeCustomers.filter((c) => {
+    const name = (c.fullName || c.customerName || "").toLowerCase();
+    const phone = (c.phone || "").toLowerCase();
+    const query = customerSearchTerm.toLowerCase();
+    return name.includes(query) || phone.includes(query);
+  });
+
+  // Customer Pagination Calculations
+  const totalCustomerPages = Math.max(
+    1,
+    Math.ceil(filteredCustomers.length / customerItemsPerPage),
+  );
+  const paginatedCustomers = filteredCustomers.slice(
+    (customerPage - 1) * customerItemsPerPage,
+    customerPage * customerItemsPerPage,
+  );
 
   const expectedCashInDrawer = safeTransactions
     .filter(
@@ -181,6 +220,9 @@ export default function SalesRegisterLedger() {
   // --- EVENT HANDLERS ---
   const handleReconcileSubmit = async (e) => {
     e.preventDefault();
+    if (isReconciling) return;
+
+    setIsReconciling(true);
     const counted = parseFloat(physicalCashInput) || 0;
     const diff = counted - expectedCashInDrawer;
 
@@ -211,27 +253,35 @@ export default function SalesRegisterLedger() {
       setReconciliationNote("");
     } catch (error) {
       console.error("Reconciliation error:", error);
+    } finally {
+      setIsReconciling(false);
     }
   };
 
   const handleDebtPayment = async (e) => {
     e.preventDefault();
-    if (!selectedDebtor || !debtRepaymentAmount) return;
+    if (!selectedDebtor || !debtRepaymentAmount || isSubmittingPayment) return;
 
+    setIsSubmittingPayment(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/customer/pay-debt`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${API_BASE_URL}/api/customer/${
+          selectedDebtor._id || selectedDebtor.id
+        }/pay-debt`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            customerId: selectedDebtor._id || selectedDebtor.id,
+            customerName:
+              selectedDebtor.customer?.fullName || selectedDebtor.customerName,
+            paymentAmount: parseFloat(debtRepaymentAmount),
+          }),
         },
-        body: JSON.stringify({
-          customerId: selectedDebtor._id || selectedDebtor.id,
-          customerName:
-            selectedDebtor.customer?.fullName || selectedDebtor.customerName,
-          paymentAmount: parseFloat(debtRepaymentAmount),
-        }),
-      });
+      );
 
       if (response.ok) {
         setSelectedDebtor(null);
@@ -242,6 +292,8 @@ export default function SalesRegisterLedger() {
       }
     } catch (error) {
       console.error("Error updating debt payment:", error);
+    } finally {
+      setIsSubmittingPayment(false);
     }
   };
 
@@ -276,6 +328,20 @@ export default function SalesRegisterLedger() {
     document.body.removeChild(link);
   };
 
+  // --- LIVE CALCULATION FOR DEBT REPAYMENT ---
+  const currentDebtorOwing = selectedDebtor
+    ? selectedDebtor.totalOwing || selectedDebtor.amountOwe || 0
+    : 0;
+  const parsedRepaymentInput = parseFloat(debtRepaymentAmount) || 0;
+  const remainingDebtCalc = Math.max(
+    0,
+    currentDebtorOwing - parsedRepaymentInput,
+  );
+  const overpaidCalc =
+    parsedRepaymentInput > currentDebtorOwing
+      ? parsedRepaymentInput - currentDebtorOwing
+      : 0;
+
   return (
     <div className="sales-ledger-page">
       {/* Page Header */}
@@ -295,6 +361,7 @@ export default function SalesRegisterLedger() {
           <button
             type="button"
             className="excel-export-btn"
+            disabled={isTxLoading}
             onClick={() =>
               exportToExcel(safeTransactions, "Sales_Transactions")
             }
@@ -474,7 +541,24 @@ export default function SalesRegisterLedger() {
                 </tr>
               </thead>
               <tbody>
-                {safeTransactions.length === 0 ? (
+                {isTxLoading ? (
+                  <tr>
+                    <td colSpan="8" className="text-center py-5">
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: "8px",
+                          color: "#6b7280",
+                        }}
+                      >
+                        <Loader2 className="animate-spin" size={20} /> Loading
+                        transactions...
+                      </div>
+                    </td>
+                  </tr>
+                ) : safeTransactions.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="text-center py-4">
                       No sales transactions found.
@@ -571,20 +655,20 @@ export default function SalesRegisterLedger() {
             </table>
           </div>
 
-          {/* Pagination Controls */}
+          {/* Ledger Pagination */}
           <div className="pagination-bar">
             <span>
               Page {currentPage} of {totalPages}
             </span>
             <div className="pagination-buttons">
               <button
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || isTxLoading}
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               >
                 <ChevronLeft size={16} /> Prev
               </button>
               <button
-                disabled={currentPage >= totalPages}
+                disabled={currentPage >= totalPages || isTxLoading}
                 onClick={() =>
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }
@@ -601,15 +685,31 @@ export default function SalesRegisterLedger() {
         <section className="ledger-card">
           <div className="ledger-toolbar">
             <h3>Customer Database & Purchase Summaries</h3>
-            <button
-              type="button"
-              className="excel-export-btn"
-              onClick={() =>
-                exportToExcel(safeCustomers, "Customer_Purchase_Summary")
-              }
-            >
-              <FileSpreadsheet size={16} /> Export Customers
-            </button>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <div className="search-box">
+                <Search size={16} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search customer name or phone..."
+                  value={customerSearchTerm}
+                  onChange={(e) => {
+                    setCustomerSearchTerm(e.target.value);
+                    setCustomerPage(1);
+                  }}
+                />
+              </div>
+
+              <button
+                type="button"
+                className="excel-export-btn"
+                disabled={isCustomersLoading}
+                onClick={() =>
+                  exportToExcel(filteredCustomers, "Customer_Purchase_Summary")
+                }
+              >
+                <FileSpreadsheet size={16} /> Export Customers
+              </button>
+            </div>
           </div>
 
           <div className="table-responsive">
@@ -625,14 +725,31 @@ export default function SalesRegisterLedger() {
                 </tr>
               </thead>
               <tbody>
-                {safeCustomers.length === 0 ? (
+                {isCustomersLoading ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-5">
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: "8px",
+                          color: "#6b7280",
+                        }}
+                      >
+                        <Loader2 className="animate-spin" size={20} /> Loading
+                        customer records...
+                      </div>
+                    </td>
+                  </tr>
+                ) : paginatedCustomers.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="text-center py-4">
-                      No customer records found.
+                      No matching customer records found.
                     </td>
                   </tr>
                 ) : (
-                  safeCustomers.map((c, i) => {
+                  paginatedCustomers.map((c, i) => {
                     const cName = c.fullName || c.customerName || "N/A";
                     const owing = c.totalOwing || c.amountOwe || 0;
                     return (
@@ -665,6 +782,33 @@ export default function SalesRegisterLedger() {
               </tbody>
             </table>
           </div>
+
+          {/* Customer Directory Pagination */}
+          <div className="pagination-bar">
+            <span>
+              Page {customerPage} of {totalCustomerPages}
+            </span>
+            <div className="pagination-buttons">
+              <button
+                disabled={customerPage === 1 || isCustomersLoading}
+                onClick={() => setCustomerPage((prev) => Math.max(prev - 1, 1))}
+              >
+                <ChevronLeft size={16} /> Prev
+              </button>
+              <button
+                disabled={
+                  customerPage >= totalCustomerPages || isCustomersLoading
+                }
+                onClick={() =>
+                  setCustomerPage((prev) =>
+                    Math.min(prev + 1, totalCustomerPages),
+                  )
+                }
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
         </section>
       )}
 
@@ -676,6 +820,7 @@ export default function SalesRegisterLedger() {
             <button
               type="button"
               className="excel-export-btn"
+              disabled={isDebtorsLoading}
               onClick={() => exportToExcel(safeDebtors, "Debtors_Ledger")}
             >
               <Download size={16} /> Export Debtors
@@ -694,7 +839,24 @@ export default function SalesRegisterLedger() {
                 </tr>
               </thead>
               <tbody>
-                {safeDebtors.length === 0 ? (
+                {isDebtorsLoading ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-5">
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: "8px",
+                          color: "#6b7280",
+                        }}
+                      >
+                        <Loader2 className="animate-spin" size={20} /> Loading
+                        debtors list...
+                      </div>
+                    </td>
+                  </tr>
+                ) : safeDebtors.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="text-center py-4">
                       No customer is currently owing. All accounts balanced!
@@ -911,25 +1073,25 @@ export default function SalesRegisterLedger() {
             left: 0,
             width: "100vw",
             height: "100vh",
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
-            backdropFilter: "blur(4px)",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 99999,
+            zIndex: 1000,
           }}
-          onClick={() => setIsReconcileOpen(false)}
+          onClick={() => !isReconciling && setIsReconcileOpen(false)}
         >
           <div
-            className="modal-content"
             style={{
-              backgroundColor: "#1e293b",
-              padding: "24px",
-              borderRadius: "12px",
-              width: "100%",
+              backgroundColor: "#ffffff",
+              padding: "28px",
+              borderRadius: "16px",
               maxWidth: "460px",
-              color: "#fff",
-              border: "1px solid #334155",
+              width: "92%",
+              boxShadow:
+                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              border: "1px solid #e5e7eb",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -938,111 +1100,150 @@ export default function SalesRegisterLedger() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "16px",
+                marginBottom: "20px",
               }}
             >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: "1.2rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "10px" }}
               >
-                <Scale size={20} style={{ color: "#10b981" }} /> Close Register
-                & Reconcile Shift
-              </h3>
+                <div
+                  style={{
+                    backgroundColor: "#eff6ff",
+                    padding: "10px",
+                    borderRadius: "10px",
+                    color: "#2563eb",
+                  }}
+                >
+                  <Scale size={22} />
+                </div>
+                <div>
+                  <h3
+                    style={{ margin: 0, fontSize: "1.15rem", color: "#111827" }}
+                  >
+                    Shift Reconciliation
+                  </h3>
+                  <span style={{ fontSize: "0.82rem", color: "#6b7280" }}>
+                    Verify cash count before register close
+                  </span>
+                </div>
+              </div>
               <button
-                type="button"
-                onClick={() => setIsReconcileOpen(false)}
+                disabled={isReconciling}
                 style={{
-                  background: "transparent",
                   border: "none",
-                  color: "#94a3b8",
+                  background: "#f3f4f6",
+                  padding: "6px",
+                  borderRadius: "50%",
                   cursor: "pointer",
+                  color: "#4b5563",
                 }}
+                onClick={() => setIsReconcileOpen(false)}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleReconcileSubmit}>
-              <div className="form-group" style={{ marginBottom: "16px" }}>
+              <div
+                style={{
+                  backgroundColor: "#f8fafc",
+                  border: "1px dashed #cbd5e1",
+                  borderRadius: "12px",
+                  padding: "16px",
+                  marginBottom: "20px",
+                  textAlign: "center",
+                }}
+              >
+                <span style={{ fontSize: "0.85rem", color: "#64748b" }}>
+                  Expected Cash in Till
+                </span>
+                <h2
+                  style={{
+                    margin: "4px 0 0 0",
+                    color: "#10b981",
+                    fontSize: "1.8rem",
+                  }}
+                >
+                  GH₵{expectedCashInDrawer.toFixed(2)}
+                </h2>
+              </div>
+
+              <div style={{ marginBottom: "18px" }}>
                 <label
                   style={{
                     display: "block",
                     marginBottom: "6px",
-                    fontSize: "0.85rem",
-                    color: "#cbd5e1",
+                    fontWeight: "600",
+                    fontSize: "0.88rem",
+                    color: "#374151",
                   }}
                 >
-                  Physical Cash Counted (GH₵) *
+                  Physical Cash Counted (GH₵)
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   required
+                  placeholder="0.00"
+                  disabled={isReconciling}
                   value={physicalCashInput}
                   onChange={(e) => setPhysicalCashInput(e.target.value)}
-                  placeholder="Enter total cash counted in till"
                   style={{
                     width: "100%",
-                    padding: "10px",
-                    backgroundColor: "#0f172a",
-                    border: "1px solid #334155",
+                    padding: "12px 14px",
                     borderRadius: "8px",
-                    color: "#fff",
+                    border: "1px solid #d1d5db",
+                    fontSize: "1rem",
+                    outline: "none",
                     boxSizing: "border-box",
                   }}
                 />
               </div>
 
-              <div className="form-group" style={{ marginBottom: "20px" }}>
+              <div style={{ marginBottom: "24px" }}>
                 <label
                   style={{
                     display: "block",
                     marginBottom: "6px",
-                    fontSize: "0.85rem",
-                    color: "#cbd5e1",
+                    fontWeight: "600",
+                    fontSize: "0.88rem",
+                    color: "#374151",
                   }}
                 >
-                  Reconciliation Note (Optional)
+                  Shift Notes / Discrepancy Reason
                 </label>
                 <textarea
                   rows="3"
+                  placeholder="Explain any difference between counted and expected cash..."
+                  disabled={isReconciling}
                   value={reconciliationNote}
                   onChange={(e) => setReconciliationNote(e.target.value)}
-                  placeholder="Notes on overages, shortages, or shift details..."
                   style={{
                     width: "100%",
-                    padding: "10px",
-                    backgroundColor: "#0f172a",
-                    border: "1px solid #334155",
+                    padding: "12px 14px",
                     borderRadius: "8px",
-                    color: "#fff",
-                    resize: "none",
+                    border: "1px solid #d1d5db",
+                    fontSize: "0.9rem",
+                    outline: "none",
                     boxSizing: "border-box",
+                    resize: "none",
                   }}
                 />
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "10px",
-                }}
-              >
+              <div style={{ display: "flex", gap: "12px" }}>
                 <button
                   type="button"
+                  disabled={isReconciling}
                   onClick={() => setIsReconcileOpen(false)}
                   style={{
-                    padding: "10px 16px",
-                    backgroundColor: "#334155",
-                    color: "#cbd5e1",
-                    border: "none",
+                    flex: 1,
+                    padding: "12px",
                     borderRadius: "8px",
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    color: "#374151",
+                    fontWeight: "600",
                     cursor: "pointer",
                   }}
                 >
@@ -1050,17 +1251,31 @@ export default function SalesRegisterLedger() {
                 </button>
                 <button
                   type="submit"
+                  disabled={isReconciling}
                   style={{
-                    padding: "10px 20px",
-                    backgroundColor: "#10b981",
-                    color: "#fff",
-                    border: "none",
+                    flex: 1,
+                    padding: "12px",
                     borderRadius: "8px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
+                    border: "none",
+                    background: "#2563eb",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: isReconciling ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    opacity: isReconciling ? 0.75 : 1,
                   }}
                 >
-                  Submit Reconciliation
+                  {isReconciling ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />{" "}
+                      Reconciling...
+                    </>
+                  ) : (
+                    "Submit & Reconcile"
+                  )}
                 </button>
               </div>
             </form>
@@ -1068,7 +1283,7 @@ export default function SalesRegisterLedger() {
         </div>
       )}
 
-      {/* RECORD DEBT REPAYMENT MODAL */}
+      {/* RECORD DEBT REPAYMENT MODAL (WITH REAL-TIME KEYPRESS CALCULATION) */}
       {selectedDebtor && (
         <div
           className="receipt-overlay"
@@ -1078,228 +1293,252 @@ export default function SalesRegisterLedger() {
             left: 0,
             width: "100vw",
             height: "100vh",
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
-            backdropFilter: "blur(4px)",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 99999,
+            zIndex: 1000,
           }}
-          onClick={() => setSelectedDebtor(null)}
+          onClick={() => !isSubmittingPayment && setSelectedDebtor(null)}
         >
           <div
-            className="modal-content"
             style={{
-              backgroundColor: "#1e293b",
-              padding: "24px",
-              borderRadius: "14px",
-              width: "100%",
-              maxWidth: "460px",
-              color: "#fff",
-              border: "1px solid #334155",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+              backgroundColor: "#ffffff",
+              padding: "28px",
+              borderRadius: "16px",
+              maxWidth: "440px",
+              width: "92%",
+              boxShadow:
+                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              border: "1px solid #e5e7eb",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "16px",
-                borderBottom: "1px solid #334155",
-                paddingBottom: "12px",
+                marginBottom: "20px",
               }}
             >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: "1.2rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "10px" }}
               >
-                <DollarSign size={20} style={{ color: "#10b981" }} /> Record
-                Debt Repayment
-              </h3>
+                <div
+                  style={{
+                    backgroundColor: "#ecfdf5",
+                    padding: "10px",
+                    borderRadius: "10px",
+                    color: "#10b981",
+                  }}
+                >
+                  <DollarSign size={22} />
+                </div>
+                <div>
+                  <h3
+                    style={{ margin: 0, fontSize: "1.15rem", color: "#111827" }}
+                  >
+                    Record Debt Repayment
+                  </h3>
+                  <span style={{ fontSize: "0.82rem", color: "#6b7280" }}>
+                    {selectedDebtor.customer?.fullName ||
+                      selectedDebtor.customerName ||
+                      "Customer"}
+                  </span>
+                </div>
+              </div>
               <button
-                type="button"
-                onClick={() => setSelectedDebtor(null)}
+                disabled={isSubmittingPayment}
                 style={{
-                  background: "transparent",
                   border: "none",
-                  color: "#94a3b8",
+                  background: "#f3f4f6",
+                  padding: "6px",
+                  borderRadius: "50%",
                   cursor: "pointer",
+                  color: "#4b5563",
                 }}
+                onClick={() => setSelectedDebtor(null)}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            {/* Debtor Details Card */}
-            <div
-              style={{
-                backgroundColor: "#0f172a",
-                padding: "14px 16px",
-                borderRadius: "10px",
-                marginBottom: "18px",
-                border: "1px solid #334155",
-              }}
-            >
-              <div
-                style={{
-                  fontWeight: "bold",
-                  fontSize: "1.05rem",
-                  color: "#38bdf8",
-                }}
-              >
-                {selectedDebtor.customer?.fullName ||
-                  selectedDebtor.customerName ||
-                  "Customer"}
-              </div>
-              <div
-                style={{
-                  fontSize: "0.85rem",
-                  color: "#94a3b8",
-                  marginTop: "2px",
-                }}
-              >
-                Phone:{" "}
-                {selectedDebtor.phone ||
-                  selectedDebtor.customer?.phone ||
-                  "N/A"}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: "12px",
-                  paddingTop: "10px",
-                  borderTop: "1px dashed #334155",
-                }}
-              >
-                <span style={{ fontSize: "0.85rem", color: "#f87171" }}>
-                  Total Outstanding Debt:
-                </span>
-                <span
-                  style={{
-                    fontSize: "1.1rem",
-                    fontWeight: "bold",
-                    color: "#ef4444",
-                  }}
-                >
-                  GH₵
-                  {(
-                    selectedDebtor.totalOwing ||
-                    selectedDebtor.amountOwe ||
-                    0
-                  ).toFixed(2)}
-                </span>
-              </div>
-            </div>
-
-            {/* Payment Form */}
             <form onSubmit={handleDebtPayment}>
-              <div style={{ marginBottom: "16px" }}>
+              {/* Input Repayment Amount */}
+              <div style={{ marginBottom: "18px" }}>
                 <label
                   style={{
                     display: "block",
                     marginBottom: "6px",
-                    fontSize: "0.85rem",
-                    color: "#cbd5e1",
-                    fontWeight: "500",
+                    fontWeight: "600",
+                    fontSize: "0.88rem",
+                    color: "#374151",
                   }}
                 >
-                  Repayment Amount (GH₵) *
+                  Repayment Amount Received (GH₵)
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  min="0.01"
                   required
+                  placeholder="0.00"
+                  disabled={isSubmittingPayment}
                   value={debtRepaymentAmount}
                   onChange={(e) => setDebtRepaymentAmount(e.target.value)}
-                  placeholder="Enter amount paid"
                   style={{
                     width: "100%",
-                    padding: "10px 12px",
-                    backgroundColor: "#0f172a",
-                    border: "1px solid #334155",
+                    padding: "12px 14px",
                     borderRadius: "8px",
-                    color: "#fff",
-                    fontSize: "1rem",
-                    boxSizing: "border-box",
+                    border: "1px solid #d1d5db",
+                    fontSize: "1.1rem",
+                    fontWeight: "600",
                     outline: "none",
+                    boxSizing: "border-box",
                   }}
                 />
-                {debtRepaymentAmount &&
-                  !isNaN(parseFloat(debtRepaymentAmount)) && (
-                    <div
-                      style={{
-                        marginTop: "8px",
-                        fontSize: "0.8rem",
-                        color:
-                          (selectedDebtor.totalOwing ||
-                            selectedDebtor.amountOwe ||
-                            0) -
-                            parseFloat(debtRepaymentAmount) <=
-                          0
-                            ? "#10b981"
-                            : "#f59e0b",
-                      }}
-                    >
-                      Remaining Balance After Payment: GH₵
-                      {Math.max(
-                        0,
-                        (selectedDebtor.totalOwing ||
-                          selectedDebtor.amountOwe ||
-                          0) - parseFloat(debtRepaymentAmount),
-                      ).toFixed(2)}
-                    </div>
-                  )}
+              </div>
+
+              {/* REAL-TIME CALCULATION BOARD */}
+              <div
+                style={{
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "12px",
+                  padding: "16px",
+                  marginBottom: "24px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "10px",
+                    fontSize: "0.88rem",
+                    color: "#64748b",
+                  }}
+                >
+                  <span>Total Current Debt:</span>
+                  <span style={{ fontWeight: "700", color: "#ef4444" }}>
+                    GH₵{currentDebtorOwing.toFixed(2)}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "10px",
+                    fontSize: "0.88rem",
+                    color: "#64748b",
+                  }}
+                >
+                  <span>Payment Applied:</span>
+                  <span style={{ fontWeight: "700", color: "#10b981" }}>
+                    - GH₵{parsedRepaymentInput.toFixed(2)}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    borderTop: "1px dashed #cbd5e1",
+                    paddingTop: "10px",
+                    marginTop: "6px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontWeight: "600",
+                      fontSize: "0.92rem",
+                      color: "#1e293b",
+                    }}
+                  >
+                    Remaining Balance:
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "1.15rem",
+                      fontWeight: "800",
+                      color: remainingDebtCalc === 0 ? "#10b981" : "#d97706",
+                    }}
+                  >
+                    GH₵{remainingDebtCalc.toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Overpayment Notice */}
+                {overpaidCalc > 0 && (
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      backgroundColor: "#fef3c7",
+                      color: "#92400e",
+                      fontSize: "0.82rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <Sparkles size={14} /> Change / Overpayment to return:{" "}
+                    <strong>GH₵{overpaidCalc.toFixed(2)}</strong>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "10px",
-                  marginTop: "24px",
-                }}
-              >
+              <div style={{ display: "flex", gap: "12px" }}>
                 <button
                   type="button"
+                  disabled={isSubmittingPayment}
                   onClick={() => setSelectedDebtor(null)}
                   style={{
-                    padding: "10px 18px",
-                    backgroundColor: "#334155",
-                    color: "#cbd5e1",
-                    border: "none",
+                    flex: 1,
+                    padding: "12px",
                     borderRadius: "8px",
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    color: "#374151",
+                    fontWeight: "600",
                     cursor: "pointer",
-                    fontSize: "0.9rem",
                   }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  disabled={isSubmittingPayment}
                   style={{
-                    padding: "10px 20px",
-                    backgroundColor: "#10b981",
-                    color: "#fff",
-                    border: "none",
+                    flex: 1,
+                    padding: "12px",
                     borderRadius: "8px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    fontSize: "0.9rem",
+                    border: "none",
+                    background: "#10b981",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: isSubmittingPayment ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    opacity: isSubmittingPayment ? 0.75 : 1,
                   }}
                 >
-                  Submit Payment
+                  {isSubmittingPayment ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />{" "}
+                      Processing...
+                    </>
+                  ) : (
+                    "Confirm Payment"
+                  )}
                 </button>
               </div>
             </form>

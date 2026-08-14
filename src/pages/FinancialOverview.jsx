@@ -12,14 +12,13 @@ import {
   X,
   Bell,
   ArrowUpRight,
+  Loader2,
 } from "lucide-react";
 import "../css/FinancialOverview.css";
 import { API_BASE_URL } from "../components/apiEnpoint";
 
 export default function FinancialOverview() {
-  const token = localStorage.getItem("token");
-
-  // State
+  // Navigation & Filter States
   const [timeframe, setTimeframe] = useState("This Month");
   const [activeTab, setActiveTab] = useState("profitability"); // 'profitability' | 'credit'
   const [productSearch, setProductSearch] = useState("");
@@ -30,18 +29,24 @@ export default function FinancialOverview() {
   const [creditAccounts, setCreditAccounts] = useState([]);
   const [operationalExpenses, setOperationalExpenses] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Modal State for Recording Payments
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
 
+  // Helper for dynamic auth token retrieval
+  const getAuthToken = () => localStorage.getItem("token");
+
   // --- API FETCH: FINANCIAL OVERVIEW ---
   const fetchOverviewData = useCallback(async () => {
     setLoading(true);
+    const token = getAuthToken();
+
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/financial/overview?timeframe=${encodeURIComponent(
+        `${API_BASE_URL}/api/customer/financial/overview?timeframe=${encodeURIComponent(
           timeframe,
         )}`,
         {
@@ -59,15 +64,16 @@ export default function FinancialOverview() {
       setCreditAccounts(
         Array.isArray(data.creditAccounts) ? data.creditAccounts : [],
       );
-      setOperationalExpenses(data.operationalExpenses || 0);
+      setOperationalExpenses(Number(data.operationalExpenses) || 0);
     } catch (error) {
       console.error("Error loading financial overview:", error);
       setProducts([]);
       setCreditAccounts([]);
+      setOperationalExpenses(0);
     } finally {
       setLoading(false);
     }
-  }, [timeframe, token]);
+  }, [timeframe]);
 
   useEffect(() => {
     fetchOverviewData();
@@ -76,38 +82,49 @@ export default function FinancialOverview() {
   // --- API POST: RECORD CUSTOMER PAYMENT ---
   const handleRecordPayment = async (e) => {
     e.preventDefault();
-    if (!selectedAccount || !paymentAmount || parseFloat(paymentAmount) <= 0)
-      return;
+    const token = getAuthToken();
+    const numericPayment = parseFloat(paymentAmount);
 
+    if (!selectedAccount || isNaN(numericPayment) || numericPayment <= 0) {
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/financial/pay-debt`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${API_BASE_URL}/api/customer/${selectedAccount.id}/pay-debt`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            customerId: selectedAccount.id,
+            paymentAmount: numericPayment,
+            note: paymentNote.trim(),
+          }),
         },
-        body: JSON.stringify({
-          customerId: selectedAccount.id,
-          paymentAmount: parseFloat(paymentAmount),
-          reminderNote: paymentNote,
-        }),
-      });
+      );
 
       if (response.ok) {
         setSelectedAccount(null);
         setPaymentAmount("");
         setPaymentNote("");
-        fetchOverviewData(); // Refresh metrics after payment
+        fetchOverviewData(); // Refresh overview after payment
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         alert(errorData.message || "Failed to record payment.");
       }
     } catch (error) {
       console.error("Error submitting payment:", error);
+      alert("A network error occurred while recording the payment.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Safe Fallback Calculations
+  // Safe Financial Fallback Calculations
   const safeProducts = Array.isArray(products) ? products : [];
   const safeCreditAccounts = Array.isArray(creditAccounts)
     ? creditAccounts
@@ -131,6 +148,11 @@ export default function FinancialOverview() {
     0,
   );
 
+  const totalUnitsSold = safeProducts.reduce(
+    (sum, item) => sum + (item.unitsSold || 0),
+    0,
+  );
+
   // Filtered Search Lists
   const filteredProducts = safeProducts.filter(
     (p) =>
@@ -141,8 +163,15 @@ export default function FinancialOverview() {
   const filteredDebts = safeCreditAccounts.filter(
     (c) =>
       c.customerName?.toLowerCase().includes(debtSearch.toLowerCase()) ||
-      c.phone?.includes(debtSearch),
+      c.phone?.toLowerCase().includes(debtSearch.toLowerCase()),
   );
+
+  // Format helper for USD currency
+  const formatCurrency = (val) =>
+    Number(val || 0).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   return (
     <div className="financial-overview-page">
@@ -172,7 +201,7 @@ export default function FinancialOverview() {
         </div>
       </header>
 
-      {/* Top 4 Summary Cards */}
+      {/* Top 4 Metric Cards */}
       <section className="metrics-grid">
         {/* Gross Revenue */}
         <div className="metric-card">
@@ -183,15 +212,9 @@ export default function FinancialOverview() {
             </div>
           </div>
           <div className="metric-body">
-            <h3>
-              $
-              {totalProductRevenue.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-              })}
-            </h3>
+            <h3>${formatCurrency(totalProductRevenue)}</h3>
             <span className="sub-text positive">
-              <ArrowUpRight size={14} /> Sales from{" "}
-              {safeProducts.reduce((a, b) => a + (b.unitsSold || 0), 0)} units
+              <ArrowUpRight size={14} /> Sales from {totalUnitsSold} units
             </span>
           </div>
         </div>
@@ -205,15 +228,10 @@ export default function FinancialOverview() {
             </div>
           </div>
           <div className="metric-body">
-            <h3>
-              $
-              {totalExpenditure.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-              })}
-            </h3>
+            <h3>${formatCurrency(totalExpenditure)}</h3>
             <span className="sub-text muted">
-              COGS: ${totalProductCost.toFixed(2)} | Ops: $
-              {operationalExpenses.toFixed(2)}
+              COGS: ${formatCurrency(totalProductCost)} | Ops: $
+              {formatCurrency(operationalExpenses)}
             </span>
           </div>
         </div>
@@ -227,14 +245,12 @@ export default function FinancialOverview() {
             </div>
           </div>
           <div className="metric-body">
-            <h3 className="profit-value">
-              ${netProfit.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </h3>
+            <h3 className="profit-value">${formatCurrency(netProfit)}</h3>
             <span className="sub-text positive">
               Margin:{" "}
               {totalProductRevenue > 0
                 ? ((netProfit / totalProductRevenue) * 100).toFixed(1)
-                : 0}
+                : "0.0"}
               %
             </span>
           </div>
@@ -250,15 +266,13 @@ export default function FinancialOverview() {
           </div>
           <div className="metric-body">
             <h3 className="amber-text">
-              $
-              {totalCustomerCreditOwed.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-              })}
+              ${formatCurrency(totalCustomerCreditOwed)}
             </h3>
             <span className="sub-text amber-badge">
               {
-                safeCreditAccounts.filter((a) => a.totalOwed > a.amountPaid)
-                  .length
+                safeCreditAccounts.filter(
+                  (a) => (a.totalOwed || 0) > (a.amountPaid || 0),
+                ).length
               }{" "}
               Active Debts
             </span>
@@ -288,7 +302,9 @@ export default function FinancialOverview() {
         </div>
 
         {loading ? (
-          <div className="text-center py-8">Loading financial metrics...</div>
+          <div className="loading-spinner-container text-center py-8">
+            <p>Loading financial metrics...</p>
+          </div>
         ) : (
           <>
             {/* TAB 1: ITEM-LEVEL PROFITABILITY */}
@@ -331,7 +347,7 @@ export default function FinancialOverview() {
                           </td>
                         </tr>
                       ) : (
-                        filteredProducts.map((item) => {
+                        filteredProducts.map((item, index) => {
                           const itemRevenue =
                             (item.unitPrice || 0) * (item.unitsSold || 0);
                           const itemCost =
@@ -343,22 +359,24 @@ export default function FinancialOverview() {
                               : 0;
 
                           return (
-                            <tr key={item.id}>
+                            <tr key={item.id || item._id || index}>
                               <td>
                                 <span className="item-name">{item.name}</span>
                                 <span className="item-cat">
                                   {item.category}
                                 </span>
                               </td>
-                              <td>${(item.unitCost || 0).toFixed(2)}</td>
-                              <td>${(item.unitPrice || 0).toFixed(2)}</td>
-                              <td className="center-text">{item.unitsSold}</td>
-                              <td>${itemRevenue.toFixed(2)}</td>
+                              <td>${formatCurrency(item.unitCost)}</td>
+                              <td>${formatCurrency(item.unitPrice)}</td>
+                              <td className="center-text">
+                                {item.unitsSold || 0}
+                              </td>
+                              <td>${formatCurrency(itemRevenue)}</td>
                               <td className="text-muted-cell">
-                                ${itemCost.toFixed(2)}
+                                ${formatCurrency(itemCost)}
                               </td>
                               <td className="profit-cell">
-                                +${itemProfit.toFixed(2)}
+                                +${formatCurrency(itemProfit)}
                               </td>
                               <td>
                                 <span className="margin-chip">
@@ -389,7 +407,8 @@ export default function FinancialOverview() {
                     />
                   </div>
                   <span className="info-badge warning">
-                    Pending Receivables: ${totalCustomerCreditOwed.toFixed(2)}
+                    Pending Receivables: $
+                    {formatCurrency(totalCustomerCreditOwed)}
                   </span>
                 </div>
 
@@ -414,24 +433,25 @@ export default function FinancialOverview() {
                           </td>
                         </tr>
                       ) : (
-                        filteredDebts.map((acc) => {
-                          const remaining =
-                            (acc.totalOwed || 0) - (acc.amountPaid || 0);
+                        filteredDebts.map((acc, index) => {
+                          const totalOwed = acc.totalOwed || 0;
+                          const amountPaid = acc.amountPaid || 0;
+                          const remaining = totalOwed - amountPaid;
                           const isCleared = remaining <= 0;
 
                           return (
-                            <tr key={acc.id}>
+                            <tr key={acc.id || acc._id || index}>
                               <td>
                                 <span className="customer-title">
                                   {acc.customerName}
                                 </span>
                                 <span className="customer-phone">
-                                  {acc.phone}
+                                  {acc.phone || "No phone provided"}
                                 </span>
                               </td>
-                              <td>${(acc.totalOwed || 0).toFixed(2)}</td>
+                              <td>${formatCurrency(totalOwed)}</td>
                               <td className="paid-cell">
-                                ${(acc.amountPaid || 0).toFixed(2)}
+                                ${formatCurrency(amountPaid)}
                               </td>
                               <td>
                                 <span
@@ -439,10 +459,7 @@ export default function FinancialOverview() {
                                     isCleared ? "cleared" : "pending"
                                   }`}
                                 >
-                                  $
-                                  {remaining > 0
-                                    ? remaining.toFixed(2)
-                                    : "0.00"}
+                                  ${formatCurrency(remaining)}
                                 </span>
                               </td>
                               <td>
@@ -454,7 +471,8 @@ export default function FinancialOverview() {
                                   ) : (
                                     <div className="reminder-box">
                                       <span className="reminder-header">
-                                        <Bell size={12} /> Due: {acc.dueDate}
+                                        <Bell size={12} /> Due:{" "}
+                                        {acc.dueDate || "N/A"}
                                       </span>
                                       {acc.reminderNote && (
                                         <p className="reminder-text">
@@ -465,7 +483,7 @@ export default function FinancialOverview() {
                                   )}
                                 </div>
                               </td>
-                              <td>{acc.lastPaymentDate}</td>
+                              <td>{acc.lastPaymentDate || "N/A"}</td>
                               <td>
                                 {!isCleared ? (
                                   <button
@@ -502,6 +520,7 @@ export default function FinancialOverview() {
               <button
                 className="close-btn"
                 onClick={() => setSelectedAccount(null)}
+                disabled={isSubmitting}
               >
                 <X size={18} />
               </button>
@@ -512,23 +531,23 @@ export default function FinancialOverview() {
                 <div>
                   <span className="box-label">Total Credit</span>
                   <span className="box-val">
-                    ${(selectedAccount.totalOwed || 0).toFixed(2)}
+                    ${formatCurrency(selectedAccount.totalOwed)}
                   </span>
                 </div>
                 <div>
                   <span className="box-label">Already Paid</span>
                   <span className="box-val green-val">
-                    ${(selectedAccount.amountPaid || 0).toFixed(2)}
+                    ${formatCurrency(selectedAccount.amountPaid)}
                   </span>
                 </div>
                 <div>
                   <span className="box-label">Current Owed</span>
                   <span className="box-val amber-val">
                     $
-                    {(
+                    {formatCurrency(
                       (selectedAccount.totalOwed || 0) -
-                      (selectedAccount.amountPaid || 0)
-                    ).toFixed(2)}
+                        (selectedAccount.amountPaid || 0),
+                    )}
                   </span>
                 </div>
               </div>
@@ -538,6 +557,7 @@ export default function FinancialOverview() {
                 <input
                   type="number"
                   step="0.01"
+                  min="0.01"
                   max={
                     (selectedAccount.totalOwed || 0) -
                     (selectedAccount.amountPaid || 0)
@@ -545,6 +565,7 @@ export default function FinancialOverview() {
                   placeholder="Enter amount paid today"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
+                  disabled={isSubmitting}
                   required
                 />
               </div>
@@ -556,6 +577,7 @@ export default function FinancialOverview() {
                   placeholder="e.g. Paid cash today. Balance to be paid next week."
                   value={paymentNote}
                   onChange={(e) => setPaymentNote(e.target.value)}
+                  disabled={isSubmitting}
                 ></textarea>
               </div>
 
@@ -564,11 +586,22 @@ export default function FinancialOverview() {
                   type="button"
                   className="cancel-btn"
                   onClick={() => setSelectedAccount(null)}
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="confirm-btn">
-                  Confirm Payment
+                <button
+                  type="submit"
+                  className="confirm-btn"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={14} className="spinner" /> Recording...
+                    </>
+                  ) : (
+                    "Confirm Payment"
+                  )}
                 </button>
               </div>
             </form>
