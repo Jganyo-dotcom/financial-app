@@ -212,7 +212,7 @@ export default function FinancialOverview() {
             </div>
           </div>
           <div className="metric-body">
-            <h3>${formatCurrency(totalProductRevenue)}</h3>
+            <h3>GH₵{formatCurrency(totalProductRevenue)}</h3>
             <span className="sub-text positive">
               <ArrowUpRight size={14} /> Sales from {totalUnitsSold} units
             </span>
@@ -228,7 +228,7 @@ export default function FinancialOverview() {
             </div>
           </div>
           <div className="metric-body">
-            <h3>${formatCurrency(totalExpenditure)}</h3>
+            <h3>GH₵{formatCurrency(totalExpenditure)}</h3>
             <span className="sub-text muted">
               COGS: ${formatCurrency(totalProductCost)} | Ops: $
               {formatCurrency(operationalExpenses)}

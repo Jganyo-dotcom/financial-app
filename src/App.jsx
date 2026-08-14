@@ -7,6 +7,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
+// Added Loader2 and ShieldCheck for the verification UI anchor
+import { Loader2, ShieldCheck } from "lucide-react";
 
 import LandingPage from "./components/landingPage/LandingPage";
 import Login from "./components/Auth/Login";
@@ -21,29 +23,25 @@ import SalesRegisterLedger from "./pages/SalesRegisterLedger";
 import InventoryExpenseManager from "./pages/InventoryExpenseManager";
 import { API_BASE_URL } from "./components/apiEnpoint";
 
-
-
-
 function AppRoutes() {
   const navigate = useNavigate();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
 
-  // 1. Verify token with the backend on initial mount
   useEffect(() => {
     const verifyUserSession = async () => {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        toast.error("session expired");
+        // Removed the annoying toast error on initial website load
         setIsAuthenticated(false);
         setIsVerifying(false);
         return;
       }
 
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -56,11 +54,9 @@ function AppRoutes() {
         if (response.ok && data.success) {
           setIsAuthenticated(true);
         } else {
-          // Token is invalid, expired, or rejected by backend
           handleSessionExpired();
         }
       } catch (error) {
-        // Network or server error during verification
         handleSessionExpired();
       } finally {
         setIsVerifying(false);
@@ -71,12 +67,11 @@ function AppRoutes() {
   }, []);
 
   const handleSessionExpired = () => {
-    toast.error("session expired");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("company");
     setIsAuthenticated(false);
-    toast.error("Session expired");
+    toast.error("Session expired. Please log in again.");
   };
 
   const handleLogin = (userData) => {
@@ -112,23 +107,72 @@ function AppRoutes() {
     }
   };
 
-  // Show a smooth full-screen loader while checking token authenticity
+  // ==========================================
+  // BEAUTIFUL VERIFICATION LOADING STATE
+  // ==========================================
   if (isVerifying) {
     return (
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           minHeight: "100vh",
-          backgroundColor: "#0f172a",
+          backgroundColor: "#0f172a", // Slate 900 base color
           color: "#f8fafc",
-          fontFamily: "sans-serif",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          gap: "1.25rem",
         }}
       >
-        <p style={{ fontSize: "1rem", fontWeight: "600" }}>
-          Verifying session...
-        </p>
+        {/* Animated Loading Ring Box Wrapper */}
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Loader2
+            size={48}
+            color="#38bdf8" // Sky blue spinner ring
+            style={{
+              animation: "spin 1s linear infinite",
+            }}
+          />
+          {/* Static security center anchor icon */}
+          <ShieldCheck
+            size={20}
+            color="#38bdf8"
+            style={{ position: "absolute" }}
+          />
+        </div>
+
+        {/* Text descriptions */}
+        <div style={{ textAlign: "center" }}>
+          <p
+            style={{
+              fontSize: "1rem",
+              fontWeight: "600",
+              margin: "0 0 0.25rem 0",
+              letterSpacing: "0.025em",
+            }}
+          >
+            Securing Your Workspace
+          </p>
+          <p style={{ fontSize: "0.813rem", color: "#94a3b8", margin: 0 }}>
+            Verifying encryption tokens...
+          </p>
+        </div>
+
+        {/* CSS Keyframe Injection hack for spin animations */}
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -172,14 +216,9 @@ function AppRoutes() {
           path="/dashboard"
           element={<DashboardLayout onLogout={handleLogout} />}
         >
-          {/* Overview Tab */}
           <Route index element={<DashboardOverview />} />
-
-          {/* Bulk Inventory Tab */}
           <Route path="inventory" element={<BulkInventory />} />
           <Route path="addons" element={<BulkInventory />} />
-
-          {/* POS & Customer Sales Entry Page */}
           <Route path="pos" element={<CustomerEntry />} />
           <Route path="financial" element={<FinancialOverview />} />
           <Route path="SalesRegisterLedger" element={<SalesRegisterLedger />} />
@@ -187,8 +226,6 @@ function AppRoutes() {
             path="InventoryExpenseManager"
             element={<InventoryExpenseManager />}
           />
-
-          {/* Financial Statements Tab */}
           <Route
             path="statements"
             element={

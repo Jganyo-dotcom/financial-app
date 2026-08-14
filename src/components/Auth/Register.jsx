@@ -16,8 +16,6 @@ import { toast } from "react-hot-toast";
 import "./Auth.css";
 import { API_BASE_URL } from "../apiEnpoint";
 
-
-
 export default function Register({
   onRegister,
   onNavigateLogin,
@@ -83,6 +81,13 @@ export default function Register({
       // Store JWT token if returned
       if (data.token) {
         localStorage.setItem("token", data.token);
+      }
+      // Add these lines right next to localStorage.setItem("token", data.token);
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+      if (data.company) {
+        localStorage.setItem("company", JSON.stringify(data.company));
       }
 
       toast.success("Workspace created successfully!");

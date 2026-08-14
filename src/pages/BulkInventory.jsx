@@ -40,7 +40,7 @@ export default function BulkInventory() {
   const [stagedItems, setStagedItems] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notification, setNotification] = useState(null);
-  const token = localStorage.getItem("token")
+  const token = localStorage.getItem("token");
 
   // Form Input Change Handler
   const handleChange = (e) => {
@@ -171,7 +171,7 @@ export default function BulkInventory() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization":`Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
@@ -237,7 +237,7 @@ export default function BulkInventory() {
             <div className="summary-pill">
               <span className="pill-label">Total Outlay</span>
               <span className="pill-value">
-                $
+                GH₵
                 {batchTotalCost.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                 })}
@@ -246,7 +246,7 @@ export default function BulkInventory() {
             <div className="summary-pill profit-pill">
               <span className="pill-label">Est. Net Profit</span>
               <span className="pill-value">
-                $
+                GH₵
                 {batchTotalProfit.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                 })}
@@ -333,7 +333,7 @@ export default function BulkInventory() {
               </div>
 
               <div className="form-group">
-                <label>Cost per Pack (GHC) *</label>
+                <label>Cost per Pack (GH₵) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -366,7 +366,7 @@ export default function BulkInventory() {
             </div>
 
             <div className="form-group">
-              <label>Target Selling Price per Unit (GHC) *</label>
+              <label>Target Selling Price per Unit (GH₵) *</label>
               <input
                 type="number"
                 step="0.01"
@@ -408,13 +408,15 @@ export default function BulkInventory() {
 
             <div className="metric-row">
               <span className="metric-label">Unit Purchase Cost:</span>
-              <span className="metric-val">${unitCost.toFixed(2)} / unit</span>
+              <span className="metric-val">
+                GH₵{unitCost.toFixed(2)} / unit
+              </span>
             </div>
 
             <div className="metric-row">
               <span className="metric-label">Total Purchase Outlay:</span>
               <span className="metric-val highlight-cost">
-                $
+                GH₵
                 {totalCost.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                 })}
@@ -424,7 +426,7 @@ export default function BulkInventory() {
             <div className="metric-row">
               <span className="metric-label">Expected Gross Revenue:</span>
               <span className="metric-val">
-                $
+                GH₵
                 {totalRevenue.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                 })}
@@ -440,7 +442,7 @@ export default function BulkInventory() {
                   totalProfit >= 0 ? "text-green" : "text-red"
                 }`}
               >
-                $
+                GH₵
                 {totalProfit.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                 })}
@@ -549,12 +551,12 @@ export default function BulkInventory() {
                     <td>
                       {item.packCount} pk ({item.totalUnits} pcs)
                     </td>
-                    <td>GHC{Number(item.totalCost).toFixed(2)}</td>
+                    <td>GH₵{Number(item.totalCost).toFixed(2)}</td>
                     <td>
-                      GHC{Number(item.sellingPricePerUnit).toFixed(2)} / unit
+                      GH₵{Number(item.sellingPricePerUnit).toFixed(2)} / unit
                     </td>
                     <td className="text-green font-semibold">
-                      +GHC{Number(item.totalProfit).toFixed(2)}
+                      +GH₵{Number(item.totalProfit).toFixed(2)}
                     </td>
                     <td>
                       <span
