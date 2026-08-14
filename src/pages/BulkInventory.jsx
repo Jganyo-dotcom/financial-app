@@ -333,7 +333,7 @@ export default function BulkInventory() {
               </div>
 
               <div className="form-group">
-                <label>Cost per Pack ($) *</label>
+                <label>Cost per Pack (GHC) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -366,7 +366,7 @@ export default function BulkInventory() {
             </div>
 
             <div className="form-group">
-              <label>Target Selling Price per Unit ($) *</label>
+              <label>Target Selling Price per Unit (GHC) *</label>
               <input
                 type="number"
                 step="0.01"
@@ -549,12 +549,12 @@ export default function BulkInventory() {
                     <td>
                       {item.packCount} pk ({item.totalUnits} pcs)
                     </td>
-                    <td>${Number(item.totalCost).toFixed(2)}</td>
+                    <td>GHC{Number(item.totalCost).toFixed(2)}</td>
                     <td>
-                      ${Number(item.sellingPricePerUnit).toFixed(2)} / unit
+                      GHC{Number(item.sellingPricePerUnit).toFixed(2)} / unit
                     </td>
                     <td className="text-green font-semibold">
-                      +${Number(item.totalProfit).toFixed(2)}
+                      +GHC{Number(item.totalProfit).toFixed(2)}
                     </td>
                     <td>
                       <span

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -20,26 +20,72 @@ import FinancialOverview from "./pages/FinancialOverview";
 import SalesRegisterLedger from "./pages/SalesRegisterLedger";
 import InventoryExpenseManager from "./pages/InventoryExpenseManager";
 
+// API Base URL - update with your actual backend URL if needed
+const API_BASE_URL = "http://localhost:5000/api";
+
 function AppRoutes() {
   const navigate = useNavigate();
 
-  // 1. Check if a token exists in localStorage to handle route protection state
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem("token");
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
+
+  // 1. Verify token with the backend on initial mount
+  useEffect(() => {
+    const verifyUserSession = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        toast.error("session expired");
+        setIsAuthenticated(false);
+        setIsVerifying(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setIsAuthenticated(true);
+        } else {
+          // Token is invalid, expired, or rejected by backend
+          handleSessionExpired();
+        }
+      } catch (error) {
+        // Network or server error during verification
+        handleSessionExpired();
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    verifyUserSession();
+  }, []);
+
+  const handleSessionExpired = () => {
+    toast.error("session expired");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("company");
+    setIsAuthenticated(false);
+    toast.error("Session expired");
+  };
 
   const handleLogin = (userData) => {
-    // Set authentication state to true since localStorage is updated inside Login.jsx
     setIsAuthenticated(true);
-
     toast.success(`Welcome back to ${userData.company?.name || "Workspace"}!`);
     navigate("/dashboard");
   };
 
   const handleRegister = (userData) => {
-    // Set authentication state to true since localStorage is updated inside Register.jsx
     setIsAuthenticated(true);
-
     toast.success(
       `Workspace created for ${userData.company?.name || "ALBIJO"}!`,
     );
@@ -47,7 +93,6 @@ function AppRoutes() {
   };
 
   const handleLogout = () => {
-    // Clear storage systems completely
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("company");
@@ -65,6 +110,27 @@ function AppRoutes() {
       navigate("/login");
     }
   };
+
+  // Show a smooth full-screen loader while checking token authenticity
+  if (isVerifying) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          backgroundColor: "#0f172a",
+          color: "#f8fafc",
+          fontFamily: "sans-serif",
+        }}
+      >
+        <p style={{ fontSize: "1rem", fontWeight: "600" }}>
+          Verifying session...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <Routes>

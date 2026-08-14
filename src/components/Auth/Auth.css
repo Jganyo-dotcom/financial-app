@@ -118,6 +118,11 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
+.auth-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .auth-password-toggle {
   position: absolute;
   right: 0.875rem;
@@ -130,8 +135,13 @@
   justify-content: center;
 }
 
-.auth-password-toggle:hover {
+.auth-password-toggle:hover:not(:disabled) {
   color: #94a3b8;
+}
+
+.auth-password-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .auth-submit-btn {
@@ -149,11 +159,19 @@
   gap: 0.5rem;
   transition:
     background-color 0.2s ease,
-    transform 0.1s ease;
+    transform 0.1s ease,
+    opacity 0.2s ease;
   margin-top: 0.5rem;
 }
 
-.auth-submit-btn:hover {
+.auth-submit-btn:hover:not(:disabled) {
+  background-color: #4f46e5;
+}
+
+/* Active submit loading state */
+.auth-submit-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
   background-color: #4f46e5;
 }
 
@@ -191,4 +209,22 @@
 
 .auth-back-btn:hover {
   color: #ffffff;
+}
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+
+/* Keyframes to power Lucide's Loader2 spin animation */
+.animate-spin {
+  animation: auth-spin 0.8s linear infinite;
+}
+
+@keyframes auth-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

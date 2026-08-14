@@ -468,13 +468,13 @@ export default function InventoryExpenseManager() {
                             </span>
                           </td>
                           <td className="muted-cell">
-                            ${Number(p.costPrice || 0).toFixed(2)}
+                            GHC{Number(p.costPrice || 0).toFixed(2)}
                           </td>
                           <td className="price-cell">
                             ${Number(p.unitPrice || 0).toFixed(2)}
                           </td>
                           <td className="positive-text">
-                            +${Number(margin).toFixed(2)}
+                            +GHC{Number(margin).toFixed(2)}
                           </td>
                           <td>
                             <div className="action-button-group">

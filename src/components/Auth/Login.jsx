@@ -52,15 +52,11 @@ export default function Login({ onLogin, onNavigateRegister, onNavigateHome }) {
         throw new Error(data.message || "Invalid credentials or login failed");
       }
 
-      // ==========================================
-      // SAVING TO LOCALSTORAGE (FIXED & ADDED)
-      // ==========================================
       if (data.token) {
         localStorage.setItem("token", data.token);
       }
 
       if (data.user) {
-        // Objects must be turned into a string using JSON.stringify before saving
         localStorage.setItem("user", JSON.stringify(data.user));
       }
 
@@ -170,11 +166,16 @@ export default function Login({ onLogin, onNavigateRegister, onNavigateHome }) {
 
           {/* Submit Button */}
           <button type="submit" className="auth-submit-btn" disabled={loading}>
-            <span>{loading ? "Signing in..." : "Sign In to Workspace"}</span>
             {loading ? (
-              <Loader2 size={18} className="animate-spin" />
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                <span>Signing in...</span>
+              </>
             ) : (
-              <ArrowRight size={18} />
+              <>
+                <span>Sign In to Workspace</span>
+                <ArrowRight size={18} />
+              </>
             )}
           </button>
         </form>

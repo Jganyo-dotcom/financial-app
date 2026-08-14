@@ -4,9 +4,6 @@ import {
   TrendingUp,
   AlertTriangle,
   Package,
-  Sparkles,
-  Activity,
-  ShieldCheck,
   Zap,
 } from "lucide-react";
 
@@ -19,13 +16,17 @@ export default function DashboardOverview() {
   return (
     <div
       style={{
-        color: "#f8fafc",
+        backgroundColor: "var(--bg-page)",
+        color: "var(--text-main)",
         maxWidth: "1200px",
         margin: "0 auto",
+        padding: "1.5rem",
+        minHeight: "100vh",
+        transition: "background-color 0.25s ease, color 0.25s ease",
         fontFamily: "sans-serif",
       }}
     >
-      {/* Inject Keyframe Animations directly in React */}
+      {/* Keyframe Animations */}
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -37,20 +38,16 @@ export default function DashboardOverview() {
         }
         @keyframes pulseGlow {
           0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.2), inset 0 0 15px rgba(99, 102, 241, 0.1); }
-          50% { box-shadow: 0 0 35px rgba(99, 102, 241, 0.5), inset 0 0 25px rgba(99, 102, 241, 0.2); }
-        }
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
+          50% { box-shadow: 0 0 35px rgba(99, 102, 241, 0.4), inset 0 0 25px rgba(99, 102, 241, 0.2); }
         }
       `}</style>
 
-      {/* 1. CREATIVE HERO BANNER WITH ANIMATED MONEY & GLOW */}
+      {/* 1. HERO BANNER WITH THEME ADAPTIVE GRADIENT */}
       <div
         style={{
           position: "relative",
-          background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)",
-          border: "1px solid #4338ca",
+          background: "var(--hero-bg)",
+          border: "1px solid var(--hero-border)",
           borderRadius: "1.25rem",
           padding: "2rem",
           marginBottom: "2rem",
@@ -58,7 +55,7 @@ export default function DashboardOverview() {
           animation: "pulseGlow 4s infinite ease-in-out",
         }}
       >
-        {/* Floating Money Decorative Graphics */}
+        {/* Floating Money Graphics */}
         <div
           style={{
             position: "absolute",
@@ -99,30 +96,32 @@ export default function DashboardOverview() {
           ✨
         </div>
 
-        {/* Content Inside Hero Banner */}
+        {/* Banner Content */}
         <div style={{ position: "relative", zIndex: 2, maxWidth: "650px" }}>
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: "0.5rem",
-              backgroundColor: "rgba(99, 102, 241, 0.2)",
-              border: "1px solid #6366f1",
+              backgroundColor: "rgba(255, 255, 255, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
               padding: "0.25rem 0.75rem",
               borderRadius: "2rem",
               fontSize: "0.8125rem",
-              color: "#a5b4fc",
+              color: "#ffffff",
               fontWeight: "700",
               marginBottom: "0.75rem",
+              backdropFilter: "blur(4px)",
             }}
           >
-            <Zap size={14} color="#a5b4fc" /> SYSTEM ACTIVE • DUMMY PREVIEW DATA
+            <Zap size={14} color="#ffffff" /> SYSTEM ACTIVE • DUMMY PREVIEW DATA
           </div>
 
           <h1
             style={{
               fontSize: "2rem",
               fontWeight: "900",
+              color: "var(--hero-text)",
               margin: "0 0 0.5rem 0",
               letterSpacing: "-0.02em",
             }}
@@ -131,7 +130,7 @@ export default function DashboardOverview() {
           </h1>
           <p
             style={{
-              color: "#cbd5e1",
+              color: "var(--hero-subtext)",
               fontSize: "0.95rem",
               lineHeight: "1.5",
               margin: 0,
@@ -144,7 +143,7 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* 2. STAT CARDS WITH COUNT-UP NUMBERS */}
+      {/* 2. STAT CARDS GRID */}
       <div
         style={{
           display: "grid",
@@ -155,37 +154,38 @@ export default function DashboardOverview() {
         {/* Total Revenue */}
         <AnimatedStatCard
           title="Total Revenue"
-          value={`$${animatedRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
-          icon={<DollarSign color="#818cf8" size={24} />}
-          color="rgba(99, 102, 241, 0.15)"
-          borderColor="#4f46e5"
+          value={`GHC ${animatedRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+          icon={<DollarSign color="var(--accent-blue)" size={24} />}
+          color="rgba(99, 102, 241, 0.12)"
+          borderColor="var(--border-color)"
         />
 
         {/* Calculated Net Profit */}
         <AnimatedStatCard
           title="Calculated Net Profit"
-          value={`$${animatedProfit.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
-          icon={<TrendingUp color="#34d399" size={24} />}
-          color="rgba(16, 185, 129, 0.15)"
-          borderColor="#059669"
+          value={`GHC ${animatedProfit.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+          icon={<TrendingUp color="#10b981" size={24} />}
+          color="rgba(16, 185, 129, 0.12)"
+          borderColor="var(--border-color)"
+          valueColor="#10b981"
         />
 
         {/* Total Items Stocked */}
         <AnimatedStatCard
           title="Total Items Stocked"
           value={`${animatedStock.toLocaleString()} Units`}
-          icon={<Package color="#60a5fa" size={24} />}
-          color="rgba(59, 130, 246, 0.15)"
-          borderColor="#2563eb"
+          icon={<Package color="#3b82f6" size={24} />}
+          color="rgba(59, 130, 246, 0.12)"
+          borderColor="var(--border-color)"
         />
 
         {/* Low Stock Warning */}
         <AnimatedStatCard
           title="Low Stock Warning"
           value="2 Items"
-          icon={<AlertTriangle color="#fbbf24" size={24} />}
-          color="rgba(245, 158, 11, 0.15)"
-          borderColor="#d97706"
+          icon={<AlertTriangle color="#f59e0b" size={24} />}
+          color="rgba(245, 158, 11, 0.12)"
+          borderColor="rgba(245, 158, 11, 0.4)"
           badge="Attention Needed"
         />
       </div>
@@ -193,21 +193,29 @@ export default function DashboardOverview() {
   );
 }
 
-// Reusable StatCard with Subtle Hover Effects & Glow
-function AnimatedStatCard({ title, value, icon, color, borderColor, badge }) {
+// Reusable StatCard powered by CSS Tokens
+function AnimatedStatCard({
+  title,
+  value,
+  icon,
+  color,
+  borderColor,
+  badge,
+  valueColor,
+}) {
   return (
     <div
       style={{
-        backgroundColor: "#1e293b",
-        border: `1px solid ${borderColor || "#334155"}`,
+        backgroundColor: "var(--bg-card)",
+        border: `1px solid ${borderColor || "var(--border-color)"}`,
         borderRadius: "1rem",
         padding: "1.5rem",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
         position: "relative",
-        transition: "transform 0.2s ease, box-shadow 0.2s ease",
-        cursor: "default",
+        boxShadow: "var(--card-shadow)",
+        transition: "all 0.25s ease",
       }}
     >
       <div
@@ -230,8 +238,8 @@ function AnimatedStatCard({ title, value, icon, color, borderColor, badge }) {
         {badge && (
           <span
             style={{
-              backgroundColor: "rgba(245, 158, 11, 0.2)",
-              color: "#fbbf24",
+              backgroundColor: "rgba(245, 158, 11, 0.12)",
+              color: "#f59e0b",
               fontSize: "0.6875rem",
               fontWeight: "700",
               padding: "0.2rem 0.5rem",
@@ -248,7 +256,7 @@ function AnimatedStatCard({ title, value, icon, color, borderColor, badge }) {
         <p
           style={{
             fontSize: "0.8125rem",
-            color: "#94a3b8",
+            color: "var(--text-muted)",
             fontWeight: "600",
             margin: 0,
           }}
@@ -259,7 +267,7 @@ function AnimatedStatCard({ title, value, icon, color, borderColor, badge }) {
           style={{
             fontSize: "1.625rem",
             fontWeight: "900",
-            marginTop: "0.25rem",
+            color: valueColor || "var(--text-main)",
             margin: "0.25rem 0 0 0",
             letterSpacing: "-0.01em",
           }}
@@ -271,7 +279,7 @@ function AnimatedStatCard({ title, value, icon, color, borderColor, badge }) {
   );
 }
 
-// Custom Hook to produce smooth count-up number animations on load
+// Smooth count-up hook
 function useCountUp(targetNumber, duration = 1000) {
   const [count, setCount] = useState(0);
 
