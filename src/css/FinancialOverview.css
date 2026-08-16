@@ -523,3 +523,101 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* ==========================================================================
+   DATE RANGE PICKER STYLES
+   ========================================================================== */
+
+/* Outer pill container */
+.date-picker-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #ffffff;
+  padding: 8px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+}
+
+/* Grouping label + input */
+.date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Label text */
+.date-input-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Blue Accent Calendar Icon */
+.calendar-icon {
+  color: #2563eb;
+}
+
+/* "to" Text Divider */
+.date-separator {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+/* The actual <input type="date"> fields */
+.date-input {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1e293b;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Hover effect */
+.date-input:hover {
+  background-color: #ffffff;
+  border-color: #94a3b8;
+}
+
+/* Focus effect (glow when clicked) */
+.date-input:focus {
+  background-color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Native browser calendar icon tuning */
+.date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .date-picker-container {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .date-input-group {
+    flex: 1;
+  }
+
+  .date-input {
+    width: 100%;
+  }
+}

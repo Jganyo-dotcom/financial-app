@@ -13,13 +13,30 @@ import {
   Bell,
   ArrowUpRight,
   Loader2,
+  History,
+  Calendar,
 } from "lucide-react";
 import "../css/FinancialOverview.css";
 import { API_BASE_URL } from "../components/apiEnpoint";
 
 export default function FinancialOverview() {
-  // Navigation & Filter States
-  const [timeframe, setTimeframe] = useState("This Month");
+  // Helper for default date strings (YYYY-MM-DD)
+  const getFirstDayOfMonth = () => {
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth(), 1)
+      .toISOString()
+      .split("T")[0];
+  };
+
+  const getTodayDate = () => {
+    return new Date().toISOString().split("T")[0];
+  };
+
+  // Date Range Picker States
+  const [startDate, setStartDate] = useState(getFirstDayOfMonth());
+  const [endDate, setEndDate] = useState(getTodayDate());
+
+  // UI States
   const [activeTab, setActiveTab] = useState("profitability"); // 'profitability' | 'credit'
   const [productSearch, setProductSearch] = useState("");
   const [debtSearch, setDebtSearch] = useState("");
@@ -31,24 +48,22 @@ export default function FinancialOverview() {
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Modal State for Recording Payments
-  const [selectedAccount, setSelectedAccount] = useState(null);
+  // Modal States
+  const [selectedAccount, setSelectedAccount] = useState(null); // For recording payments
+  const [historyAccount, setHistoryAccount] = useState(null); // For viewing payment history breakdown
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
 
-  // Helper for dynamic auth token retrieval
   const getAuthToken = () => localStorage.getItem("token");
 
-  // --- API FETCH: FINANCIAL OVERVIEW ---
+  // --- API FETCH: FINANCIAL OVERVIEW WITH DATE PICKER ---
   const fetchOverviewData = useCallback(async () => {
     setLoading(true);
     const token = getAuthToken();
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/customer/financial/overview?timeframe=${encodeURIComponent(
-          timeframe,
-        )}`,
+        `${API_BASE_URL}/api/customer/financial/overview?startDate=${startDate}&endDate=${endDate}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -73,7 +88,7 @@ export default function FinancialOverview() {
     } finally {
       setLoading(false);
     }
-  }, [timeframe]);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     fetchOverviewData();
@@ -111,7 +126,7 @@ export default function FinancialOverview() {
         setSelectedAccount(null);
         setPaymentAmount("");
         setPaymentNote("");
-        fetchOverviewData(); // Refresh overview after payment
+        fetchOverviewData(); // Refresh metrics after payment
       } else {
         const errorData = await response.json().catch(() => ({}));
         alert(errorData.message || "Failed to record payment.");
@@ -124,7 +139,7 @@ export default function FinancialOverview() {
     }
   };
 
-  // Safe Financial Fallback Calculations
+  // Safe Calculations
   const safeProducts = Array.isArray(products) ? products : [];
   const safeCreditAccounts = Array.isArray(creditAccounts)
     ? creditAccounts
@@ -144,7 +159,7 @@ export default function FinancialOverview() {
   const netProfit = totalProductRevenue - totalExpenditure;
 
   const totalCustomerCreditOwed = safeCreditAccounts.reduce(
-    (sum, acc) => sum + ((acc.totalOwed || 0) - (acc.amountPaid || 0)),
+    (sum, acc) => sum + ((acc.totalOwed || 0) - ( 0)),
     0,
   );
 
@@ -153,7 +168,7 @@ export default function FinancialOverview() {
     0,
   );
 
-  // Filtered Search Lists
+  // Search Filters
   const filteredProducts = safeProducts.filter(
     (p) =>
       p.name?.toLowerCase().includes(productSearch.toLowerCase()) ||
@@ -166,7 +181,6 @@ export default function FinancialOverview() {
       c.phone?.toLowerCase().includes(debtSearch.toLowerCase()),
   );
 
-  // Format helper for USD currency
   const formatCurrency = (val) =>
     Number(val || 0).toLocaleString("en-US", {
       minimumFractionDigits: 2,
@@ -187,23 +201,35 @@ export default function FinancialOverview() {
           </p>
         </div>
 
-        {/* Timeframe Filter */}
-        <div className="timeframe-selector">
-          {["Today", "This Week", "This Month"].map((tf) => (
-            <button
-              key={tf}
-              className={`time-btn ${timeframe === tf ? "active" : ""}`}
-              onClick={() => setTimeframe(tf)}
-            >
-              {tf}
-            </button>
-          ))}
+        {/* Date Range Picker */}
+        <div
+          className="date-picker-container"
+          style={{ display: "flex", gap: "10px", alignItems: "center" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <Calendar size={16} />
+            <label style={{ fontSize: "13px" }}>From:</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="date-input"
+            />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <label style={{ fontSize: "13px" }}>To:</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="date-input"
+            />
+          </div>
         </div>
       </header>
 
       {/* Top 4 Metric Cards */}
       <section className="metrics-grid">
-        {/* Gross Revenue */}
         <div className="metric-card">
           <div className="metric-header">
             <span className="metric-title">Gross Revenue</span>
@@ -219,7 +245,6 @@ export default function FinancialOverview() {
           </div>
         </div>
 
-        {/* Total Expenditure */}
         <div className="metric-card">
           <div className="metric-header">
             <span className="metric-title">Total Expenditure</span>
@@ -230,13 +255,12 @@ export default function FinancialOverview() {
           <div className="metric-body">
             <h3>GH₵{formatCurrency(totalExpenditure)}</h3>
             <span className="sub-text muted">
-              COGS: ${formatCurrency(totalProductCost)} | Ops: $
+              COGS: GH₵{formatCurrency(totalProductCost)} | Ops: GH₵
               {formatCurrency(operationalExpenses)}
             </span>
           </div>
         </div>
 
-        {/* Net Profit */}
         <div className="metric-card highlight">
           <div className="metric-header">
             <span className="metric-title">Net Profit</span>
@@ -245,7 +269,7 @@ export default function FinancialOverview() {
             </div>
           </div>
           <div className="metric-body">
-            <h3 className="profit-value">${formatCurrency(netProfit)}</h3>
+            <h3 className="profit-value">GH₵{formatCurrency(netProfit)}</h3>
             <span className="sub-text positive">
               Margin:{" "}
               {totalProductRevenue > 0
@@ -256,7 +280,6 @@ export default function FinancialOverview() {
           </div>
         </div>
 
-        {/* Outstanding Customer Credit */}
         <div className="metric-card">
           <div className="metric-header">
             <span className="metric-title">Money Owed by Customers</span>
@@ -266,7 +289,7 @@ export default function FinancialOverview() {
           </div>
           <div className="metric-body">
             <h3 className="amber-text">
-              ${formatCurrency(totalCustomerCreditOwed)}
+              GH₵{formatCurrency(totalCustomerCreditOwed)}
             </h3>
             <span className="sub-text amber-badge">
               {
@@ -282,12 +305,9 @@ export default function FinancialOverview() {
 
       {/* Main Tabbed Detail Section */}
       <section className="main-content-card">
-        {/* Navigation Tabs */}
         <div className="card-tabs">
           <button
-            className={`tab-btn ${
-              activeTab === "profitability" ? "active" : ""
-            }`}
+            className={`tab-btn ${activeTab === "profitability" ? "active" : ""}`}
             onClick={() => setActiveTab("profitability")}
           >
             <ShoppingBag size={16} /> Item-Level Profit Breakdown
@@ -307,7 +327,7 @@ export default function FinancialOverview() {
           </div>
         ) : (
           <>
-            {/* TAB 1: ITEM-LEVEL PROFITABILITY */}
+            {/* TAB 1: ITEM PROFITABILITY */}
             {activeTab === "profitability" && (
               <div className="tab-pane">
                 <div className="pane-toolbar">
@@ -366,17 +386,17 @@ export default function FinancialOverview() {
                                   {item.category}
                                 </span>
                               </td>
-                              <td>${formatCurrency(item.unitCost)}</td>
-                              <td>${formatCurrency(item.unitPrice)}</td>
+                              <td>GH₵{formatCurrency(item.unitCost)}</td>
+                              <td>GH₵{formatCurrency(item.unitPrice)}</td>
                               <td className="center-text">
                                 {item.unitsSold || 0}
                               </td>
-                              <td>${formatCurrency(itemRevenue)}</td>
+                              <td>GH₵{formatCurrency(itemRevenue)}</td>
                               <td className="text-muted-cell">
-                                ${formatCurrency(itemCost)}
+                                GH₵{formatCurrency(itemCost)}
                               </td>
                               <td className="profit-cell">
-                                +${formatCurrency(itemProfit)}
+                                +GH₵{formatCurrency(itemProfit)}
                               </td>
                               <td>
                                 <span className="margin-chip">
@@ -407,7 +427,7 @@ export default function FinancialOverview() {
                     />
                   </div>
                   <span className="info-badge warning">
-                    Pending Receivables: $
+                    Pending Receivables: GH₵
                     {formatCurrency(totalCustomerCreditOwed)}
                   </span>
                 </div>
@@ -417,9 +437,9 @@ export default function FinancialOverview() {
                     <thead>
                       <tr>
                         <th>Customer & Contact</th>
-                        <th>Total Credit</th>
-                        <th>Amount Paid</th>
                         <th>Remaining Balance</th>
+                        <th>Amount Paid</th>
+                        <th>Total Credit</th>
                         <th>Status & Active Reminder</th>
                         <th>Last Payment</th>
                         <th>Action</th>
@@ -436,7 +456,7 @@ export default function FinancialOverview() {
                         filteredDebts.map((acc, index) => {
                           const totalOwed = acc.totalOwed || 0;
                           const amountPaid = acc.amountPaid || 0;
-                          const remaining = totalOwed - amountPaid;
+                          const remaining = acc.totalCredit;
                           const isCleared = remaining <= 0;
 
                           return (
@@ -449,9 +469,9 @@ export default function FinancialOverview() {
                                   {acc.phone || "No phone provided"}
                                 </span>
                               </td>
-                              <td>${formatCurrency(totalOwed)}</td>
+                              <td>GH₵{formatCurrency(totalOwed)}</td>
                               <td className="paid-cell">
-                                ${formatCurrency(amountPaid)}
+                                GH₵{formatCurrency(amountPaid)}
                               </td>
                               <td>
                                 <span
@@ -459,7 +479,7 @@ export default function FinancialOverview() {
                                     isCleared ? "cleared" : "pending"
                                   }`}
                                 >
-                                  ${formatCurrency(remaining)}
+                                  GH₵{formatCurrency(remaining)}
                                 </span>
                               </td>
                               <td>
@@ -483,20 +503,35 @@ export default function FinancialOverview() {
                                   )}
                                 </div>
                               </td>
-                              <td>{acc.lastPaymentDate || "N/A"}</td>
                               <td>
-                                {!isCleared ? (
+                                {acc.lastPaymentDate
+                                  ? new Date(
+                                      acc.lastPaymentDate,
+                                    ).toLocaleDateString()
+                                  : "N/A"}
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", gap: "6px" }}>
+                                  {/* BUTTON: View Payment History Breakdown */}
                                   <button
-                                    className="pay-action-btn"
-                                    onClick={() => setSelectedAccount(acc)}
+                                    className="history-action-btn"
+                                    onClick={() => setHistoryAccount(acc)}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      padding: "6px 10px",
+                                      fontSize: "12px",
+                                      backgroundColor: "blue",
+                                      border: "1px solid #cbd5e1",
+                                      borderRadius: "6px",
+                                      cursor: "pointer",
+                                      color:"white"
+                                    }}
                                   >
-                                    <Plus size={14} /> Record Payment
+                                    <History size={14} /> History
                                   </button>
-                                ) : (
-                                  <span className="text-muted-cell">
-                                    Cleared
-                                  </span>
-                                )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -511,7 +546,7 @@ export default function FinancialOverview() {
         )}
       </section>
 
-      {/* PAYMENT RECORDING MODAL */}
+      {/* RECORD PAYMENT MODAL */}
       {selectedAccount && (
         <div className="modal-overlay">
           <div className="modal-card">
@@ -531,19 +566,19 @@ export default function FinancialOverview() {
                 <div>
                   <span className="box-label">Total Credit</span>
                   <span className="box-val">
-                    ${formatCurrency(selectedAccount.totalOwed)}
+                    GH₵{formatCurrency(selectedAccount.totalOwed)}
                   </span>
                 </div>
                 <div>
                   <span className="box-label">Already Paid</span>
                   <span className="box-val green-val">
-                    ${formatCurrency(selectedAccount.amountPaid)}
+                    GH₵{formatCurrency(selectedAccount.amountPaid)}
                   </span>
                 </div>
                 <div>
                   <span className="box-label">Current Owed</span>
                   <span className="box-val amber-val">
-                    $
+                    GH₵
                     {formatCurrency(
                       (selectedAccount.totalOwed || 0) -
                         (selectedAccount.amountPaid || 0),
@@ -553,7 +588,7 @@ export default function FinancialOverview() {
               </div>
 
               <div className="form-group">
-                <label>Amount Being Paid ($) *</label>
+                <label>Amount Being Paid (GH₵) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -605,6 +640,70 @@ export default function FinancialOverview() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* PAYMENT HISTORY BREAKDOWN MODAL */}
+      {historyAccount && (
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: "600px" }}>
+            <div className="modal-header">
+              <h3>Payment History: {historyAccount.customerName}</h3>
+              <button
+                className="close-btn"
+                onClick={() => setHistoryAccount(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: "16px" }}>
+              {historyAccount.paymentHistory &&
+              historyAccount.paymentHistory.length > 0 ? (
+                <table
+                  className="financial-table"
+                  style={{ width: "100%", textAlign: "left" }}
+                >
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Amount Paid</th>
+                      <th>Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyAccount.paymentHistory.map((pmt, idx) => (
+                      <tr key={pmt.id || idx}>
+                        <td>
+                          {pmt.paymentDate
+                            ? new Date(pmt.paymentDate).toLocaleDateString()
+                            : "N/A"}
+                        </td>
+                        <td style={{ color: "green", fontWeight: "bold" }}>
+                          GH₵{formatCurrency(pmt.amountPaid)}
+                        </td>
+                        <td>{pmt.note || "No notes"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{ textAlign: "center", padding: "20px" }}>
+                  No payment history recorded yet for this customer.
+                </p>
+              )}
+            </div>
+
+            <div className="modal-actions" style={{ padding: "12px 16px" }}>
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => setHistoryAccount(null)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

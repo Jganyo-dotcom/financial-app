@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   UserPlus,
   Database,
@@ -17,7 +17,7 @@ import {
   Pencil,
   CreditCard,
   Receipt,
-  DollarSign,
+  Search, // Added Search icon
 } from "lucide-react";
 import "../css/CustomerEntry.css";
 
@@ -38,6 +38,11 @@ export default function CustomerEntry() {
   // Dynamic Products State
   const [products, setProducts] = useState([]);
 
+  // Search & Filter state for Products
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
   // Multi-Product Basket State
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -47,7 +52,7 @@ export default function CustomerEntry() {
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
-    amountSpent: "", // Amount actually paid / entered
+    amountSpent: "",
     paymentMethod: "Cash",
     customerType: "Walk-in",
     email: "",
@@ -106,6 +111,26 @@ export default function CustomerEntry() {
     fetchInventoryProducts();
   }, [token]);
 
+  // Close product dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsProductDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filter products based on search term (limits to top 50 to keep UI ultra-fast)
+  const filteredProducts = products
+    .filter((prod) => {
+      const name = (prod.name || prod.title || "").toLowerCase();
+      const search = productSearchTerm.toLowerCase();
+      return name.includes(search);
+    })
+    .slice(0, 50);
+
   // Handle Input Changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -157,9 +182,11 @@ export default function CustomerEntry() {
     setBasket(updatedBasket);
     updateAutoTotal(updatedBasket);
 
-    // Reset selector
+    // Reset search & selector
     setSelectedProductId("");
+    setProductSearchTerm("");
     setQuantity(1);
+    setIsProductDropdownOpen(false);
   };
 
   // Remove Item from Basket
@@ -200,7 +227,7 @@ export default function CustomerEntry() {
       id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
       ...formData,
       items: basket,
-      amountSpent: currentAmountPaid, // Amount Paid by customer
+      amountSpent: currentAmountPaid,
       totalAmount: parseFloat(currentBasketTotal.toFixed(2)),
       amountOwe: currentBalance > 0 ? parseFloat(currentBalance.toFixed(2)) : 0,
       timestamp: new Date().toLocaleTimeString([], {
@@ -414,35 +441,141 @@ export default function CustomerEntry() {
             </div>
           </div>
 
-          {/* Product Selection */}
+          {/* Searchable Product Picker */}
           <div className="form-group vault-section">
             <label>
               <ShoppingBag size={15} /> Select Purchased Items
             </label>
             <div className="vault-picker-row">
-              <select
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value)}
-                className="vault-dropdown"
-                disabled={isLoadingProducts || products.length === 0}
+              {/* Custom Searchable Dropdown */}
+              <div
+                className="searchable-dropdown-container"
+                ref={dropdownRef}
+                style={{ flex: 1, position: "relative" }}
               >
-                <option value="">
-                  {isLoadingProducts
-                    ? "Loading products from backend..."
-                    : products.length === 0
-                      ? "No products found in database"
-                      : "-- Choose item from Inventory --"}
-                </option>
-                {products.map((prod) => {
-                  const pId = prod._id || prod.id;
-                  const price = Number(prod.unitPrice || prod.price || 0);
-                  return (
-                    <option key={pId} value={pId}>
-                      {prod.name || prod.title} (GH₵{price.toFixed(2)})
-                    </option>
-                  );
-                })}
-              </select>
+                <div className="input-wrapper">
+                  <Search size={16} className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder={
+                      isLoadingProducts
+                        ? "Loading inventory..."
+                        : "Search goods by name..."
+                    }
+                    value={productSearchTerm}
+                    onChange={(e) => {
+                      setProductSearchTerm(e.target.value);
+                      setIsProductDropdownOpen(true);
+                      if (selectedProductId) setSelectedProductId("");
+                    }}
+                    onFocus={() => setIsProductDropdownOpen(true)}
+                    disabled={isLoadingProducts || products.length === 0}
+                    style={{ paddingLeft: "36px", width: "100%" }}
+                  />
+                  {productSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductSearchTerm("");
+                        setSelectedProductId("");
+                      }}
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        color: "#94a3b8",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown Options List */}
+                {isProductDropdownOpen && !isLoadingProducts && (
+                  <ul
+                    className="dropdown-menu-list"
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      maxHeight: "220px",
+                      overflowY: "auto",
+                      backgroundColor: "#1e293b",
+                      border: "1px solid #334155",
+                      borderRadius: "6px",
+                      marginTop: "4px",
+                      zIndex: 100,
+                      listStyle: "none",
+                      padding: "4px 0",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.5)",
+                    }}
+                  >
+                    {filteredProducts.length === 0 ? (
+                      <li
+                        style={{
+                          padding: "10px 12px",
+                          color: "#94a3b8",
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        No matching items found
+                      </li>
+                    ) : (
+                      filteredProducts.map((prod) => {
+                        const pId = prod._id || prod.id;
+                        const price = Number(prod.unitPrice || prod.price || 0);
+                        const isSelected = selectedProductId === pId;
+
+                        return (
+                          <li
+                            key={pId}
+                            onClick={() => {
+                              setSelectedProductId(pId);
+                              setProductSearchTerm(
+                                `${prod.name || prod.title} (GH₵${price.toFixed(
+                                  2,
+                                )})`,
+                              );
+                              setIsProductDropdownOpen(false);
+                            }}
+                            style={{
+                              padding: "10px 12px",
+                              cursor: "pointer",
+                              backgroundColor: isSelected
+                                ? "#334155"
+                                : "transparent",
+                              color: "#f8fafc",
+                              borderBottom: "1px solid #0f172a",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: "0.9rem",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "#334155")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                isSelected ? "#334155" : "transparent")
+                            }
+                          >
+                            <span>{prod.name || prod.title}</span>
+                            <strong style={{ color: "#10b981" }}>
+                              GH₵{price.toFixed(2)}
+                            </strong>
+                          </li>
+                        );
+                      })
+                    )}
+                  </ul>
+                )}
+              </div>
 
               <div className="qty-input-wrapper">
                 <label className="sub-label">Qty:</label>
@@ -988,11 +1121,11 @@ export default function CustomerEntry() {
                     fontSize: "0.85rem",
                   }}
                 >
-                  Payment Notes / Reference (Optional)
+                  Payment Notes (Optional)
                 </label>
-                <textarea
-                  rows="2"
-                  placeholder="e.g. Part payment received via MoMo..."
+                <input
+                  type="text"
+                  placeholder="e.g. Reference number, receipt #..."
                   value={paymentRecord.notes}
                   onChange={(e) =>
                     setPaymentRecord({
@@ -1007,9 +1140,8 @@ export default function CustomerEntry() {
                     border: "1px solid #334155",
                     borderRadius: "6px",
                     color: "#fff",
-                    resize: "vertical",
                   }}
-                ></textarea>
+                />
               </div>
 
               <div
@@ -1023,7 +1155,7 @@ export default function CustomerEntry() {
                   type="button"
                   onClick={handleClosePaymentModal}
                   style={{
-                    padding: "10px 16px",
+                    padding: "8px 16px",
                     backgroundColor: "#334155",
                     color: "#fff",
                     border: "none",
@@ -1036,13 +1168,13 @@ export default function CustomerEntry() {
                 <button
                   type="submit"
                   style={{
-                    padding: "10px 16px",
+                    padding: "8px 16px",
                     backgroundColor: "#10b981",
                     color: "#fff",
                     border: "none",
                     borderRadius: "6px",
                     cursor: "pointer",
-                    fontWeight: "bold",
+                    fontWeight: "600",
                   }}
                 >
                   Save Payment

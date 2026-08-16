@@ -76,7 +76,7 @@ function AppRoutes() {
 
   const handleLogin = (userData) => {
     setIsAuthenticated(true);
-    toast.success(`Welcome back to ${userData.company?.name || "Workspace"}!`);
+    toast.success(`Welcome back to ${userData.user?.name || "Boss"}!`);
     navigate("/dashboard");
   };
 
