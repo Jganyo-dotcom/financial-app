@@ -22,6 +22,7 @@ import FinancialOverview from "./pages/FinancialOverview";
 import SalesRegisterLedger from "./pages/SalesRegisterLedger";
 import InventoryExpenseManager from "./pages/InventoryExpenseManager";
 import { API_BASE_URL } from "./components/apiEnpoint";
+import ResetPassword from "./pages/ResetPassword";
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -189,6 +190,7 @@ function AppRoutes() {
           />
         }
       />
+      <Route path="/forgetPassword" element={<ResetPassword />} />
       <Route
         path="/login"
         element={
@@ -196,6 +198,7 @@ function AppRoutes() {
             onLogin={handleLogin}
             onNavigateRegister={() => navigate("/register")}
             onNavigateHome={() => navigate("/")}
+            onNavigateForgotPassword={() => navigate("/forgetPassword")}
           />
         }
       />

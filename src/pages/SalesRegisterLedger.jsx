@@ -201,11 +201,7 @@ export default function SalesRegisterLedger() {
   );
 
   const expectedCashInDrawer = safeTransactions
-    .filter(
-      (tx) =>
-        tx.paymentMethod === "Cash" &&
-        (tx.paymentStatus === "Paid" || tx.status === "Completed"),
-    )
+    .filter((tx) => tx.paymentMethod === "Cash")
     .reduce((sum, tx) => sum + (tx.amountPaid || tx.totalAmount || 0), 0);
 
   const mobileMoneyReceived = safeTransactions

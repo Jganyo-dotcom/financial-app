@@ -13,7 +13,12 @@ import { toast } from "react-hot-toast";
 import "./Auth.css";
 import { API_BASE_URL } from "../apiEnpoint";
 
-export default function Login({ onLogin, onNavigateRegister, onNavigateHome }) {
+export default function Login({
+  onLogin,
+  onNavigateRegister,
+  onNavigateHome,
+  onNavigateForgotPassword,
+}) {
   const [formData, setFormData] = useState({
     companyReference: "",
     email: "",
@@ -162,6 +167,20 @@ export default function Login({ onLogin, onNavigateRegister, onNavigateHome }) {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+          </div>
+
+          {/* Forgot Password Link */}
+          <div
+            className="auth-forgot-row"
+            style={{ textAlign: "right", marginTop: "-6px" }}
+          >
+            <span
+              className="auth-link"
+              onClick={onNavigateForgotPassword}
+              style={{ fontSize: "0.85rem", cursor: "pointer" }}
+            >
+              Forgot Password?
+            </span>
           </div>
 
           {/* Submit Button */}
