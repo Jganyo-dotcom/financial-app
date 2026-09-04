@@ -1,14 +1,11 @@
 import React, { useState } from "react";
 import {
   PackagePlus,
-  Boxes,
   Plus,
   Trash2,
-  UploadCloud,
   Sparkles,
   AlertCircle,
   CheckCircle2,
-  RefreshCw,
   Calculator,
 } from "lucide-react";
 import { API_BASE_URL } from "../components/apiEnpoint";
@@ -34,6 +31,7 @@ export default function BulkInventory() {
     unitsPerPack: "1",
     costPerPack: "",
     sellingPricePerUnit: "",
+    sellingPricePerPack: "",
   });
 
   // Staged Batch List
@@ -53,11 +51,14 @@ export default function BulkInventory() {
   const unitsPerPack = parseFloat(formData.unitsPerPack) || 1;
   const costPerPack = parseFloat(formData.costPerPack) || 0;
   const sellingPricePerUnit = parseFloat(formData.sellingPricePerUnit) || 0;
+  const sellingPricePerPack = parseFloat(formData.sellingPricePerPack) || 0;
 
   const totalUnits = packCount * unitsPerPack;
   const totalCost = packCount * costPerPack;
   const unitCost = unitsPerPack > 0 ? costPerPack / unitsPerPack : 0;
-  const totalRevenue = totalUnits * sellingPricePerUnit;
+
+  // Revenue based on whole packs wholesale
+  const totalRevenue = packCount * sellingPricePerPack;
   const totalProfit = totalRevenue - totalCost;
   const profitMargin =
     totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
@@ -84,10 +85,15 @@ export default function BulkInventory() {
   // Add Item to Staging Queue
   const handleStageItem = (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || packCount <= 0 || costPerPack <= 0) {
+    if (
+      !formData.name.trim() ||
+      packCount <= 0 ||
+      costPerPack <= 0 ||
+      sellingPricePerPack <= 0
+    ) {
       triggerNotification(
         "error",
-        "Please fill in product name, pack count, and cost price.",
+        "Please fill in product name, pack count, cost price, and wholesale pack price.",
       );
       return;
     }
@@ -103,6 +109,7 @@ export default function BulkInventory() {
       costPerPack,
       unitCost,
       sellingPricePerUnit,
+      sellingPricePerPack,
       totalCost,
       totalRevenue,
       totalProfit,
@@ -121,32 +128,11 @@ export default function BulkInventory() {
       unitsPerPack: "1",
       costPerPack: "",
       sellingPricePerUnit: "",
+      sellingPricePerPack: "",
     });
   };
 
-  // Remove Staged Item
-  const handleRemoveStaged = (id) => {
-    setStagedItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  // Trigger Toast Notification
-  const triggerNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3500);
-  };
-
-  // Overall Batch Metrics
-  const batchTotalCost = stagedItems.reduce(
-    (acc, item) => acc + item.totalCost,
-    0,
-  );
-  const batchTotalRevenue = stagedItems.reduce(
-    (acc, item) => acc + item.totalRevenue,
-    0,
-  );
-  const batchTotalProfit = batchTotalRevenue - batchTotalCost;
-
-  // Final Submit to Backend via Fetch API
+  // Backend Sync
   const handleBackendImport = async () => {
     if (stagedItems.length === 0) return;
 
@@ -163,6 +149,7 @@ export default function BulkInventory() {
           costPricePerPack: item.costPerPack,
           unitCostPrice: Number(item.unitCost.toFixed(2)),
           unitSellingPrice: Number(item.sellingPricePerUnit),
+          packSellingPrice: Number(item.sellingPricePerPack),
           expectedProfit: Number(item.totalProfit.toFixed(2)),
         })),
       };
@@ -198,6 +185,27 @@ export default function BulkInventory() {
     }
   };
 
+  // Remove Staged Item
+  const handleRemoveStaged = (id) => {
+    setStagedItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Trigger Toast Notification
+  const triggerNotification = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3500);
+  };
+
+  // Overall Batch Metrics
+  const batchTotalCost = stagedItems.reduce(
+    (acc, item) => acc + item.totalCost,
+    0,
+  );
+  const batchTotalRevenue = stagedItems.reduce(
+    (acc, item) => acc + item.totalRevenue,
+    0,
+  );
+  const batchTotalProfit = batchTotalRevenue - batchTotalCost;
   const marginHealth = getMarginHealth(profitMargin);
 
   return (
@@ -365,17 +373,33 @@ export default function BulkInventory() {
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Target Selling Price per Unit (GH₵) *</label>
-              <input
-                type="number"
-                step="0.01"
-                name="sellingPricePerUnit"
-                placeholder="e.g. 7.50"
-                value={formData.sellingPricePerUnit}
-                onChange={handleChange}
-                required
-              />
+            {/* TWIN PRICE ENTRY FIELDS */}
+            <div className="form-row">
+              <div className="form-group">
+                <label>Target Selling Price per Unit (GH₵) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="sellingPricePerUnit"
+                  placeholder="e.g. 7.50"
+                  value={formData.sellingPricePerUnit}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Wholesale Price per Pack (GH₵) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="sellingPricePerPack"
+                  placeholder="e.g. 46.00"
+                  value={formData.sellingPricePerPack}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
 
             <button type="submit" className="add-to-stage-btn">
@@ -402,7 +426,7 @@ export default function BulkInventory() {
             <div className="metric-row">
               <span className="metric-label">Total Inventory Units:</span>
               <span className="metric-val">
-                {totalUnits.toLocaleString()} units
+                {totalUnits.toLocaleString()} units ({packCount} packs)
               </span>
             </div>
 
@@ -424,7 +448,7 @@ export default function BulkInventory() {
             </div>
 
             <div className="metric-row">
-              <span className="metric-label">Expected Gross Revenue:</span>
+              <span className="metric-label">Expected Wholesale Revenue:</span>
               <span className="metric-val">
                 GH₵
                 {totalRevenue.toLocaleString(undefined, {
@@ -482,55 +506,46 @@ export default function BulkInventory() {
       </div>
 
       {/* BOTTOM SECTION: Staged Items Queue & Backend Sync */}
-      <div className="staging-section">
-        <div className="staging-header">
+      <div className="staged-queue-card">
+        <div className="card-header-flex">
           <div>
             <h3>Batch Import Queue ({stagedItems.length})</h3>
             <p>
               Review items before committing changes to your inventory database.
             </p>
           </div>
-
           {stagedItems.length > 0 && (
             <button
-              className="sync-backend-btn"
+              type="button"
+              className="submit-batch-btn"
               onClick={handleBackendImport}
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw size={18} className="spin" />
-                  Syncing to Database...
-                </>
-              ) : (
-                <>
-                  <UploadCloud size={18} />
-                  Import All ({stagedItems.length}) to Backend
-                </>
-              )}
+              {isSubmitting
+                ? "Syncing to Database..."
+                : `Import All (${stagedItems.length}) to Backend`}
             </button>
           )}
         </div>
 
         {stagedItems.length === 0 ? (
-          <div className="empty-staging-state">
-            <Boxes size={48} className="empty-icon" />
-            <h4>Your Batch Queue is Empty</h4>
-            <p>
+          <div className="empty-queue-state">
+            <p className="empty-title">Your Batch Queue is Empty</p>
+            <p className="empty-desc">
               Use the form above to calculate profit margins and stage items for
               bulk backend import.
             </p>
           </div>
         ) : (
           <div className="table-responsive">
-            <table className="staging-table">
+            <table className="staged-items-table">
               <thead>
                 <tr>
                   <th>Product</th>
                   <th>Category</th>
                   <th>Packs / Units</th>
                   <th>Total Cost</th>
-                  <th>Selling Price</th>
+                  <th>Retail / Pack Price</th>
                   <th>Expected Profit</th>
                   <th>Margin</th>
                   <th>Action</th>
@@ -540,38 +555,29 @@ export default function BulkInventory() {
                 {stagedItems.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      <div className="table-product-cell">
-                        <span className="product-title">{item.name}</span>
-                        <span className="product-sku">{item.sku}</span>
-                      </div>
+                      <strong>{item.name}</strong>
+                      {item.sku && (
+                        <small className="sku-tag">({item.sku})</small>
+                      )}
                     </td>
-                    <td>
-                      <span className="category-tag">{item.category}</span>
-                    </td>
+                    <td>{item.category}</td>
                     <td>
                       {item.packCount} pk ({item.totalUnits} pcs)
                     </td>
                     <td>GH₵{Number(item.totalCost).toFixed(2)}</td>
                     <td>
-                      GH₵{Number(item.sellingPricePerUnit).toFixed(2)} / unit
+                      GH₵{Number(item.sellingPricePerUnit).toFixed(2)} / GH₵
+                      {Number(item.sellingPricePerPack).toFixed(2)}
                     </td>
-                    <td className="text-green font-semibold">
+                    <td className="text-green">
                       +GH₵{Number(item.totalProfit).toFixed(2)}
                     </td>
-                    <td>
-                      <span
-                        className={`margin-pill ${
-                          getMarginHealth(item.profitMargin).color
-                        }`}
-                      >
-                        {Number(item.profitMargin).toFixed(1)}%
-                      </span>
-                    </td>
+                    <td>{Number(item.profitMargin).toFixed(1)}%</td>
                     <td>
                       <button
-                        className="delete-item-btn"
+                        type="button"
+                        className="remove-item-btn"
                         onClick={() => handleRemoveStaged(item.id)}
-                        title="Remove item"
                       >
                         <Trash2 size={16} />
                       </button>

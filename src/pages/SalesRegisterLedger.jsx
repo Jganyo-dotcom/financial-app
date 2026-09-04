@@ -22,6 +22,8 @@ import {
   Loader2,
   ArrowRight,
   Sparkles,
+  Mail,
+  RefreshCw,
 } from "lucide-react";
 import "../css/SalesRegisterLedger.css";
 import { API_BASE_URL } from "../components/apiEnpoint";
@@ -30,6 +32,7 @@ export default function SalesRegisterLedger() {
   // Navigation Tabs: 'ledger' | 'customers' | 'debtors'
   const [activeTab, setActiveTab] = useState("ledger");
   const token = localStorage.getItem("token");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Data States
   const [transactions, setTransactions] = useState([]);
@@ -1002,13 +1005,100 @@ export default function SalesRegisterLedger() {
               </div>
             </div>
 
-            <div className="drawer-footer">
+            <div
+              className="drawer-footer"
+              style={{
+                display: "flex",
+                gap: "10px",
+                justifyContent: "space-between",
+              }}
+            >
+              {/* Option A: Browser Print Execution */}
               <button
                 type="button"
                 className="print-btn"
                 onClick={() => window.print()}
+                disabled={isSendingEmail}
+                style={{ flex: 1 }}
               >
                 <Printer size={16} /> Print Receipt Copy
+              </button>
+
+              {/* Option B: Direct Backend Email Despatch */}
+              <button
+                type="button"
+                className="send-email-btn"
+                disabled={isSendingEmail || !selectedTx.customer?.email}
+                title={
+                  selectedTx.customer?.email
+                    ? `Send invoice copy to ${selectedTx.customer.email}`
+                    : "No customer email linked to this transaction record"
+                }
+                style={{
+                  flex: 1,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  padding: "10px 14px",
+                  backgroundColor: selectedTx.customer?.email
+                    ? "#3b82f6"
+                    : "#475569",
+                  color: selectedTx.customer?.email ? "#fff" : "#94a3b8",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor:
+                    selectedTx.customer?.email && !isSendingEmail
+                      ? "pointer"
+                      : "not-allowed",
+                  fontSize: "0.9rem",
+                  fontWeight: "500",
+                }}
+                onClick={async () => {
+                  setIsSendingEmail(true);
+                  try {
+                    const token = localStorage.getItem("token");
+                    const response = await fetch(
+                      `${API_BASE_URL}/api/customer/${selectedTx._id}/send-receipt`,
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${token}`,
+                        },
+                      },
+                    );
+
+                    if (!response.ok) {
+                      const errData = await response.json().catch(() => ({}));
+                      throw new Error(
+                        errData.message ||
+                          "Failed to dispatch email statement.",
+                      );
+                    }
+
+                    toast.success(
+                      `Receipt statement emailed to ${selectedTx.customer.email}!`,
+                    );
+                  } catch (err) {
+                    console.error("Mail Dispatch Error:", err);
+                    toast.error(
+                      err.message || "Could not process email statement.",
+                    );
+                  } finally {
+                    setIsSendingEmail(false);
+                  }
+                }}
+              >
+                {isSendingEmail ? (
+                  <>
+                    <RefreshCw size={16} className="spin" /> Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail size={16} /> Send to Email
+                  </>
+                )}
               </button>
             </div>
           </div>

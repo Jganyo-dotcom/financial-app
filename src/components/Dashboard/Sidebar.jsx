@@ -12,7 +12,9 @@ import {
   Moon,
   Store,
   Layers,
+  History,
   X,
+  Settings,
 } from "lucide-react";
 import "./Sidebar.css";
 
@@ -58,6 +60,16 @@ export default function Sidebar({
       path: "/dashboard/InventoryExpenseManager",
       label: "Stock & Expenses",
       icon: Layers,
+    },
+    {
+      path: "/dashboard/AuditLogs",
+      label: "AuditLogs",
+      icon: History,
+    },
+    {
+      path: "/dashboard/SettingsPage",
+      label: "Setting",
+      icon: Settings,
     },
   ];
 

@@ -19,8 +19,16 @@ export default function Login({
   onNavigateHome,
   onNavigateForgotPassword,
 }) {
+  // 1. Get the raw string string or null from storage
+  const savedCompany = localStorage.getItem("company");
+
+  // 2. Parse it if it exists, otherwise provide a fallback object
+  const parsedCompany = savedCompany ? JSON.parse(savedCompany) : null;
+
+  // 3. Pass the safe value to useState with optional chaining (?.) and a fallback string ""
   const [formData, setFormData] = useState({
-    companyReference: "",
+    companyReference:
+      parsedCompany?.reference || parsedCompany?.Reference || "",
     email: "",
     password: "",
   });

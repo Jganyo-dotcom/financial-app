@@ -23,6 +23,8 @@ import SalesRegisterLedger from "./pages/SalesRegisterLedger";
 import InventoryExpenseManager from "./pages/InventoryExpenseManager";
 import { API_BASE_URL } from "./components/apiEnpoint";
 import ResetPassword from "./pages/ResetPassword";
+import { AuditLogPage } from "./pages/AuditLogPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -92,7 +94,6 @@ function AppRoutes() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    localStorage.removeItem("company");
 
     setIsAuthenticated(false);
     toast("Logged out of ALBIJO", { icon: "👋" });
@@ -225,6 +226,9 @@ function AppRoutes() {
           <Route path="pos" element={<CustomerEntry />} />
           <Route path="financial" element={<FinancialOverview />} />
           <Route path="SalesRegisterLedger" element={<SalesRegisterLedger />} />
+          <Route path="AuditLogs" element={<AuditLogPage />} />
+          <Route path="SettingsPage" element={<SettingsPage />} />
+
           <Route
             path="InventoryExpenseManager"
             element={<InventoryExpenseManager />}

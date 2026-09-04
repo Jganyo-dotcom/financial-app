@@ -28,6 +28,7 @@ export default function CustomerEntry() {
 
   // --- State Management ---
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [saleType, setSaleType] = useState("Piece"); // Supports "Piece" or "Pack"
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [toast, setToast] = useState(null);
@@ -161,31 +162,62 @@ export default function CustomerEntry() {
     if (!selectedItem) return;
 
     const productId = selectedItem._id || selectedItem.id;
-    const existingIndex = basket.findIndex((i) => i.id === productId);
+    const qtyInt = parseInt(quantity, 10) || 1;
+
+    // 1. Grab prices from your database schema fields
+    const baseUnitPrice = Number(
+      selectedItem.unitPrice || selectedItem.price || 0,
+    );
+
+    // 🔄 FIX: Force the system to use the explicit wholesale pack price from the DB
+    let finalPricePerUnit = baseUnitPrice;
+
+    if (saleType === "Pack") {
+      // Uses packSellingPrice directly. If it's missing, fall back to calculated retail pack cost
+      finalPricePerUnit = Number(
+        selectedItem.packSellingPrice ||
+          baseUnitPrice * Number(selectedItem.unitsPerPack || 1),
+      );
+    }
+
+    // 2. Setup clean display names for your basket chips
+    const displayName =
+      saleType === "Pack"
+        ? `${selectedItem.name || selectedItem.title || "Product"} (Pack)`
+        : selectedItem.name || selectedItem.title || "Product";
+
+    // Unique local ID so piece items and pack items don't merge into one row
+    const basketItemId = `${productId}-${saleType}`;
     let updatedBasket = [...basket];
+    const existingIndex = basket.findIndex(
+      (i) => i.basketItemId === basketItemId,
+    );
 
     if (existingIndex > -1) {
       updatedBasket[existingIndex] = {
         ...updatedBasket[existingIndex],
-        qty: updatedBasket[existingIndex].qty + parseInt(quantity, 10),
+        qty: updatedBasket[existingIndex].qty + qtyInt,
       };
     } else {
       updatedBasket.push({
-        id: productId,
+        id: basketItemId,
+        basketItemId,
         product: productId,
-        name: selectedItem.name || selectedItem.title || "Product",
-        qty: parseInt(quantity, 10),
-        unitPrice: Number(selectedItem.unitPrice || selectedItem.price || 0),
+        name: displayName,
+        qty: qtyInt,
+        unitPrice: finalPricePerUnit, // ✨ This will now be your exact GH₵45.00 wholesale pack price!
+        saleType: saleType,
       });
     }
 
     setBasket(updatedBasket);
     updateAutoTotal(updatedBasket);
 
-    // Reset search & selector
+    // Reset states for next picker search
     setSelectedProductId("");
     setProductSearchTerm("");
     setQuantity(1);
+    setSaleType("Piece");
     setIsProductDropdownOpen(false);
   };
 
@@ -588,6 +620,20 @@ export default function CustomerEntry() {
                   }
                   className="qty-input"
                 />
+              </div>
+
+              {/* ✨ NEW: Drop this Unit/Pack Selection Type Box here */}
+              <div className="qty-input-wrapper" style={{ minWidth: "100px" }}>
+                <label className="sub-label">Type:</label>
+                <select
+                  value={saleType}
+                  onChange={(e) => setSaleType(e.target.value)}
+                  className="qty-input"
+                  style={{ cursor: "pointer", width: "100%" }}
+                >
+                  <option value="Piece">Piece (Single)</option>
+                  <option value="Pack">Pack (Bulk)</option>
+                </select>
               </div>
 
               <button

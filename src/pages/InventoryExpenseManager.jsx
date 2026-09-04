@@ -55,6 +55,7 @@ export default function InventoryExpenseManager() {
 
   // Restock Input
   const [restockQty, setRestockQty] = useState("");
+  const [restockType, setRestockType] = useState("Piece"); // ✨ NEW STATE FIELD: "Piece" or "Pack"
 
   // Edit Product Form State
   const [editName, setEditName] = useState("");
@@ -62,7 +63,9 @@ export default function InventoryExpenseManager() {
   const [editCostPrice, setEditCostPrice] = useState("");
   const [editUnitPrice, setEditUnitPrice] = useState("");
   const [editStockQuantity, setEditStockQuantity] = useState("");
+  const [editPackSellingPrice, setEditPackSellingPrice] = useState(""); // ✨ NEW STATE FIELD
   const [editLowStockThreshold, setEditLowStockThreshold] = useState("10");
+  const [isSaving, setIsSaving] = useState(false);
 
   // New Expense Form State
   const [expenseCategory, setExpenseCategory] = useState("Generator Fuel");
@@ -119,6 +122,12 @@ export default function InventoryExpenseManager() {
     setEditCategory(p.category || "Hardware");
     setEditCostPrice(p.costPrice !== undefined ? p.costPrice : "");
     setEditUnitPrice(p.unitPrice !== undefined ? p.unitPrice : "");
+
+    // ✨ NEW: Auto-fills the wholesale pack price state from the selected product object
+    setEditPackSellingPrice(
+      p.packSellingPrice !== undefined ? p.packSellingPrice : "",
+    );
+
     setEditStockQuantity(p.stockQuantity !== undefined ? p.stockQuantity : "");
     setEditLowStockThreshold(
       p.lowStockThreshold !== undefined ? p.lowStockThreshold : 10,
@@ -128,18 +137,23 @@ export default function InventoryExpenseManager() {
 
   // --- ACTIONS ---
 
-  // 1. Restock Product (PATCH /products/:productId/restock)
   const handleRestockSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedProduct) return;
 
+    if (!selectedProduct) return;
+    setIsSaving(true);
     const productId = selectedProduct._id || selectedProduct.id;
-    const addedStock = parseInt(restockQty) || 0;
+    const rawQty = parseInt(restockQty, 10) || 0;
+    const unitsInPack = parseInt(selectedProduct.unitsPerPack, 10) || 1;
+
+    // 🔄 Calculate total single units to send to the backend patch router
+    const finalAddedStock =
+      restockType === "Pack" ? rawQty * unitsInPack : rawQty;
 
     try {
       const res = await request(`/products/${productId}/restock`, {
         method: "PATCH",
-        body: JSON.stringify({ addedQuantity: addedStock }),
+        body: JSON.stringify({ addedQuantity: finalAddedStock }), // Sends the computed single unit count
       });
 
       const updatedProduct = res.product || res;
@@ -147,19 +161,25 @@ export default function InventoryExpenseManager() {
       setProducts((prev) =>
         prev.map((p) => ((p._id || p.id) === productId ? updatedProduct : p)),
       );
+
       toast.success("Restock successful");
+      setIsSaving(false);
       setIsRestockOpen(false);
       setRestockQty("");
+      setRestockType("Piece"); // Reset back to default standard selection tier
       setSelectedProduct(null);
     } catch (error) {
+      setIsSaving(false);
       console.error("Error restocking product:", error);
       toast.error(error.message || "Failed to restock product");
     }
   };
 
   // 2. Update Product Details (PATCH /products/:productId/price)
+
   const handleEditProductSubmit = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
     if (!selectedProduct) return;
 
     const productId = selectedProduct._id || selectedProduct.id;
@@ -169,6 +189,7 @@ export default function InventoryExpenseManager() {
       category: editCategory,
       costPrice: parseFloat(editCostPrice) || 0,
       unitPrice: parseFloat(editUnitPrice) || 0,
+      packSellingPrice: parseFloat(editPackSellingPrice) || 0, // ✨ NEW: Maps straight to the updated backend router model
       stockQuantity: parseInt(editStockQuantity) || 0,
       lowStockThreshold: parseInt(editLowStockThreshold) || 10,
     };
@@ -184,12 +205,14 @@ export default function InventoryExpenseManager() {
       setProducts((prev) =>
         prev.map((p) => ((p._id || p.id) === productId ? updatedProduct : p)),
       );
-      toast.success("Product updated successfully");
       setIsEditOpen(false);
+      toast.success("Product updated successfully");
       setSelectedProduct(null);
     } catch (error) {
       console.error("Error updating product:", error);
       toast.error(error.message || "Failed to update product details");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -218,6 +241,7 @@ export default function InventoryExpenseManager() {
   // 4. Log New Operational Expense (POST /expenses)
   const handleAddExpenseSubmit = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
     const today = new Date();
     const formattedDate = today.toISOString().split("T")[0];
     const formattedTime = today.toLocaleTimeString([], {
@@ -243,6 +267,7 @@ export default function InventoryExpenseManager() {
       const createdExpense = res.expense || res;
 
       setExpenses((prev) => [createdExpense, ...prev]);
+      setIsSaving(false);
       toast.success("Expense recorded successfully");
 
       setIsAddExpenseOpen(false);
@@ -251,11 +276,14 @@ export default function InventoryExpenseManager() {
     } catch (error) {
       console.error("Error adding expense:", error);
       toast.error(error.message || "Failed to log expense");
+    } finally {
+      setIsSaving(false); // 2. Turn off loading regardless of success/error
     }
   };
 
   // 5. Reverse Expense (DELETE /expenses/:expenseId)
   const handleReverseExpenseSubmit = async () => {
+    setIsSaving(true);
     if (!selectedExpense) return;
 
     const expenseId = selectedExpense._id || selectedExpense.id;
@@ -268,11 +296,14 @@ export default function InventoryExpenseManager() {
       setExpenses((prev) => prev.filter((e) => (e._id || e.id) !== expenseId));
 
       toast.success("Expense reversed successfully");
+      setIsSaving(false);
       setIsReverseExpenseOpen(false);
       setSelectedExpense(null);
     } catch (error) {
       console.error("Error reversing expense:", error);
       toast.error(error.message || "Failed to reverse expense");
+    } finally {
+      setIsSaving(false); // 2. Turn off loading regardless of success/error
     }
   };
 
@@ -383,7 +414,7 @@ export default function InventoryExpenseManager() {
           </div>
           <div className="metric-body">
             <h3>
-              $
+              GHC
               {totalInventoryValue.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
               })}
@@ -400,7 +431,7 @@ export default function InventoryExpenseManager() {
             </div>
           </div>
           <div className="metric-body">
-            <h3 className="amber-text">${totalExpenses.toFixed(2)}</h3>
+            <h3 className="amber-text">GHC{totalExpenses.toFixed(2)}</h3>
             <span className="sub-text muted">Operating overhead logged</span>
           </div>
         </div>
@@ -471,7 +502,7 @@ export default function InventoryExpenseManager() {
                             GHC{Number(p.costPrice || 0).toFixed(2)}
                           </td>
                           <td className="price-cell">
-                            ${Number(p.unitPrice || 0).toFixed(2)}
+                            GHC{Number(p.unitPrice || 0).toFixed(2)}
                           </td>
                           <td className="positive-text">
                             +GHC{Number(margin).toFixed(2)}
@@ -536,7 +567,7 @@ export default function InventoryExpenseManager() {
                     <tr>
                       <th>Date & Time</th>
                       <th>Category</th>
-                      <th>Amount ($)</th>
+                      <th>Amount (GHC)</th>
                       <th>Purpose / Description</th>
                       <th>Payment Method</th>
                       <th>Actions</th>
@@ -555,7 +586,7 @@ export default function InventoryExpenseManager() {
                           </span>
                         </td>
                         <td className="amount-cell amber-text">
-                          -${Number(exp.amount || 0).toFixed(2)}
+                          -GHC{Number(exp.amount || 0).toFixed(2)}
                         </td>
                         <td className="purpose-cell">{exp.purpose}</td>
                         <td>
@@ -586,6 +617,7 @@ export default function InventoryExpenseManager() {
       )}
 
       {/* ================= MODAL 1: RESTOCK PRODUCT ================= */}
+      {/* ================= MODAL 1: RESTOCK PRODUCT ================= */}
       {isRestockOpen && selectedProduct && (
         <div className="modal-overlay" onClick={() => setIsRestockOpen(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -605,19 +637,48 @@ export default function InventoryExpenseManager() {
 
             <form onSubmit={handleRestockSubmit} className="modal-form">
               <div className="item-info-summary">
-                <span className="info-title">{selectedProduct.name}</span>
-                <span className="info-sub">
+                <div className="font-semibold text-base text-slate-200">
+                  {selectedProduct.name}
+                </div>
+                <div className="info-sub mt-1">
                   Current Stock:{" "}
-                  <strong>{selectedProduct.stockQuantity} units</strong>
-                </span>
+                  <strong className="text-emerald-400">
+                    {selectedProduct.stockQuantity} units
+                  </strong>
+                  {selectedProduct.unitsPerPack && (
+                    <span className="text-slate-400 text-xs block mt-0.5">
+                      (Pack Size Configuration: {selectedProduct.unitsPerPack}{" "}
+                      units / pack)
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <div className="form-group">
-                <label>Additional Stock Quantity to Add *</label>
+              {/* ✨ NEW: Type Selector Toggle Row Field */}
+              <div className="form-group mt-4">
+                <label>Restock Unit Type *</label>
+                <select
+                  value={restockType}
+                  onChange={(e) => setRestockType(e.target.value)}
+                  className="w-full p-2 rounded bg-slate-800 border border-slate-700 text-white cursor-pointer"
+                >
+                  <option value="Piece">Pieces (Single Units)</option>
+                  <option value="Pack">Packs (Whole Box / Bundles)</option>
+                </select>
+              </div>
+
+              <div className="form-group mt-3">
+                <label>
+                  {restockType === "Pack"
+                    ? "Number of Packs to Add *"
+                    : "Additional Stock Quantity to Add *"}
+                </label>
                 <input
                   type="number"
                   min="1"
-                  placeholder="e.g. 25"
+                  placeholder={
+                    restockType === "Pack" ? "e.g. 5 boxes" : "e.g. 25 units"
+                  }
                   value={restockQty}
                   onChange={(e) => setRestockQty(e.target.value)}
                   required
@@ -625,17 +686,36 @@ export default function InventoryExpenseManager() {
               </div>
 
               {restockQty && (
-                <div className="preview-calc-box">
-                  <span>New Total Stock Level:</span>
-                  <strong>
-                    {selectedProduct.stockQuantity +
-                      (parseInt(restockQty) || 0)}{" "}
-                    units
-                  </strong>
+                <div className="preview-calc-box mt-3 p-3 bg-slate-800/50 rounded border border-slate-700/50 flex flex-col gap-1">
+                  <div className="text-xs text-slate-400 flex justify-between">
+                    <span>Incoming Stock Conversion:</span>
+                    <span className="font-semibold text-slate-200">
+                      +
+                      {restockType === "Pack"
+                        ? (parseInt(restockQty, 10) || 0) *
+                          (parseInt(selectedProduct.unitsPerPack, 10) || 1)
+                        : parseInt(restockQty, 10) || 0}{" "}
+                      single units
+                    </span>
+                  </div>
+                  <div className="divider my-1 border-t border-slate-700" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-slate-300">
+                      Projected New Stock Level:
+                    </span>
+                    <strong className="text-emerald-400 text-lg">
+                      {selectedProduct.stockQuantity +
+                        (restockType === "Pack"
+                          ? (parseInt(restockQty, 10) || 0) *
+                            (parseInt(selectedProduct.unitsPerPack, 10) || 1)
+                          : parseInt(restockQty, 10) || 0)}{" "}
+                      units
+                    </strong>
+                  </div>
                 </div>
               )}
 
-              <div className="modal-actions">
+              <div className="modal-actions mt-5 flex justify-end gap-3">
                 <button
                   type="button"
                   className="cancel-btn"
@@ -643,8 +723,12 @@ export default function InventoryExpenseManager() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="confirm-btn">
-                  Confirm Restock
+                <button
+                  type="submit"
+                  className="confirm-btn"
+                  disabled={isSaving} // Blocks duplicate click submissions
+                >
+                  {isSaving ? "Restocking..." : "Confirm Restock"}
                 </button>
               </div>
             </form>
@@ -652,6 +736,7 @@ export default function InventoryExpenseManager() {
         </div>
       )}
 
+      {/* ================= MODAL 2: EDIT PRODUCT DETAILS ================= */}
       {/* ================= MODAL 2: EDIT PRODUCT DETAILS ================= */}
       {isEditOpen && selectedProduct && (
         <div className="modal-overlay" onClick={() => setIsEditOpen(false)}>
@@ -665,6 +750,7 @@ export default function InventoryExpenseManager() {
                 type="button"
                 className="close-drawer-btn"
                 onClick={() => setIsEditOpen(false)}
+                disabled={isSaving}
               >
                 <X size={18} />
               </button>
@@ -685,6 +771,7 @@ export default function InventoryExpenseManager() {
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
+                  disabled={isSaving}
                   required
                 />
               </div>
@@ -694,6 +781,7 @@ export default function InventoryExpenseManager() {
                 <select
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
+                  disabled={isSaving}
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
@@ -705,29 +793,45 @@ export default function InventoryExpenseManager() {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Cost Price ($) *</label>
+                  <label>Cost Price (GHC) *</label>
                   <input
                     type="number"
                     step="0.01"
                     value={editCostPrice}
                     onChange={(e) => setEditCostPrice(e.target.value)}
+                    disabled={isSaving}
                     required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Retail Selling Price ($) *</label>
+                  <label>Retail Selling Price (GHC) *</label>
                   <input
                     type="number"
                     step="0.01"
                     value={editUnitPrice}
                     onChange={(e) => setEditUnitPrice(e.target.value)}
+                    disabled={isSaving}
                     required
                   />
                 </div>
               </div>
 
+              {/* ✨ REVISED: Side-by-side Layout row showcasing Wholesale Pack Configuration */}
               <div className="form-row">
+                <div className="form-group">
+                  <label>Wholesale Price per Pack (GHC) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editPackSellingPrice}
+                    onChange={(e) => setEditPackSellingPrice(e.target.value)}
+                    placeholder="e.g. 46.00"
+                    disabled={isSaving}
+                    required
+                  />
+                </div>
+
                 <div className="form-group">
                   <label>Current Stock Quantity *</label>
                   <input
@@ -735,27 +839,29 @@ export default function InventoryExpenseManager() {
                     min="0"
                     value={editStockQuantity}
                     onChange={(e) => setEditStockQuantity(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Low Stock Alert Level *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editLowStockThreshold}
-                    onChange={(e) => setEditLowStockThreshold(e.target.value)}
+                    disabled={isSaving}
                     required
                   />
                 </div>
               </div>
 
+              <div className="form-group">
+                <label>Low Stock Alert Level *</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editLowStockThreshold}
+                  onChange={(e) => setEditLowStockThreshold(e.target.value)}
+                  disabled={isSaving}
+                  required
+                />
+              </div>
+
               {editUnitPrice && editCostPrice && (
                 <div className="preview-calc-box">
-                  <span>Expected Profit Margin per Item:</span>
+                  <span>Expected Retail Profit Margin per Item:</span>
                   <strong className="positive-text">
-                    +$
+                    +GHC{" "}
                     {(
                       parseFloat(editUnitPrice) - parseFloat(editCostPrice)
                     ).toFixed(2)}
@@ -768,11 +874,16 @@ export default function InventoryExpenseManager() {
                   type="button"
                   className="cancel-btn"
                   onClick={() => setIsEditOpen(false)}
+                  disabled={isSaving}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="confirm-btn">
-                  Save Changes
+                <button
+                  type="submit"
+                  className="confirm-btn"
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Saving Changes..." : "Save Changes"}
                 </button>
               </div>
             </form>
@@ -826,7 +937,7 @@ export default function InventoryExpenseManager() {
               </div>
 
               <div className="form-group">
-                <label>Amount Spent ($) *</label>
+                <label>Amount Spent (GHC) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -868,7 +979,7 @@ export default function InventoryExpenseManager() {
                   Cancel
                 </button>
                 <button type="submit" className="confirm-btn amber-btn">
-                  Log Expense
+                  {isSaving ? "Saving Changes..." : "Log Expense"}
                 </button>
               </div>
             </form>
@@ -966,7 +1077,7 @@ export default function InventoryExpenseManager() {
                 className="confirm-btn amber-btn"
                 onClick={handleReverseExpenseSubmit}
               >
-                Confirm Reversal
+                {isSaving ? "Reversing..." : " Confirm Reversal"}
               </button>
             </div>
           </div>
