@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import "../css/SettingsPage.css";
 import { API_BASE_URL } from "../components/apiEnpoint";
+import toast from "react-hot-toast";
 
 export const SettingsPage = () => {
   // Read role & token from LocalStorage
@@ -77,9 +78,12 @@ export const SettingsPage = () => {
         const headers = { Authorization: `Bearer ${token}` };
 
         // 1. Fetch User Profile (Fixed string interpolation)
-        const profileRes = await fetch(`${API_BASE_URL}/api/auth/user/profile`, {
-          headers,
-        });
+        const profileRes = await fetch(
+          `${API_BASE_URL}/api/auth/user/profile`,
+          {
+            headers,
+          },
+        );
         if (profileRes.ok) {
           const profileData = await profileRes.json();
           setProfile({
@@ -124,19 +128,23 @@ export const SettingsPage = () => {
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+      const response = await fetch(
+        `${API_BASE_URL}/api/auth/update-user/profile`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(profile),
         },
-        body: JSON.stringify(profile),
-      });
-
-      if (!response.ok) throw new Error("Failed to update profile");
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to update profile");
       triggerToast("Profile updated successfully!");
     } catch (err) {
-      alert(err.message || "Error updating profile.");
+      toast.error(err.message || "Error updating profile.");
     } finally {
       setSubmitting(false);
     }
@@ -145,26 +153,32 @@ export const SettingsPage = () => {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passwords.newPassword !== passwords.confirmPassword) {
-      alert("New passwords do not match.");
+      toast("Passwords do not match", { icon: "⚠️" });
       return;
     }
     if (submitting) return;
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/user/change-password", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+      const response = await fetch(
+        `${API_BASE_URL}/api/auth/user/change-password`,
+        {
+          method: "post",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            currentPassword: passwords.currentPassword,
+            newPassword: passwords.newPassword,
+            confirmPassword: passwords.confirmPassword,
+          }),
         },
-        body: JSON.stringify({
-          currentPassword: passwords.currentPassword,
-          newPassword: passwords.newPassword,
-        }),
-      });
+      );
+      const data = await response.json();
 
-      if (!response.ok) throw new Error("Failed to change password");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to change password");
       setPasswords({
         currentPassword: "",
         newPassword: "",
@@ -172,7 +186,7 @@ export const SettingsPage = () => {
       });
       triggerToast("Password updated successfully!");
     } catch (err) {
-      alert(err.message || "Error changing password.");
+      toast(err.message, { icon: "⚠️" });
     } finally {
       setSubmitting(false);
     }
@@ -188,7 +202,7 @@ export const SettingsPage = () => {
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/employees", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/create-employee`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
