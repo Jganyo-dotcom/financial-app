@@ -50,7 +50,7 @@ export const SettingsPage = () => {
   });
   const [showEmpPassword, setShowEmpPassword] = useState(false);
 
-  // Staff List State
+  // Staff List State (Initialized as empty array)
   const [employees, setEmployees] = useState([]);
 
   // Business Settings State
@@ -77,7 +77,7 @@ export const SettingsPage = () => {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
 
-        // 1. Fetch User Profile (Fixed string interpolation)
+        // 1. Fetch User Profile
         const profileRes = await fetch(
           `${API_BASE_URL}/api/auth/user/profile`,
           {
@@ -95,20 +95,26 @@ export const SettingsPage = () => {
 
         // Fetch Staff & Business Settings if user is Store Admin
         if (isAdmin) {
-          // 2. Added API_BASE_URL prefix to all Promise.all endpoints
           const [empRes, bizRes] = await Promise.all([
-            fetch(`${API_BASE_URL}/api/employees`, { headers }),
+            fetch(`${API_BASE_URL}/api/auth/all-employees`, { headers }),
             fetch(`${API_BASE_URL}/api/business-settings`, { headers }),
           ]);
 
           if (empRes.ok) {
             const empData = await empRes.json();
-            setEmployees(empData);
+            // Safeguard against non-array response formats
+            if (Array.isArray(empData)) {
+              setEmployees(empData);
+            } else if (Array.isArray(empData.employees)) {
+              setEmployees(empData.employees);
+            } else {
+              setEmployees([]);
+            }
           }
 
           if (bizRes.ok) {
             const bizData = await bizRes.json();
-            setBusiness(bizData);
+            setBusiness((prev) => ({ ...prev, ...bizData }));
           }
         }
       } catch (error) {
@@ -121,7 +127,7 @@ export const SettingsPage = () => {
     fetchSettingsData();
   }, [isAdmin]);
 
-  // Handlers with double-submit prevention
+  // Handlers
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -163,7 +169,7 @@ export const SettingsPage = () => {
       const response = await fetch(
         `${API_BASE_URL}/api/auth/user/change-password`,
         {
-          method: "post",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -179,6 +185,7 @@ export const SettingsPage = () => {
 
       if (!response.ok)
         throw new Error(data.message || "Failed to change password");
+
       setPasswords({
         currentPassword: "",
         newPassword: "",
@@ -186,7 +193,7 @@ export const SettingsPage = () => {
       });
       triggerToast("Password updated successfully!");
     } catch (err) {
-      toast(err.message, { icon: "⚠️" });
+      toast(err.message || "Error changing password.", { icon: "⚠️" });
     } finally {
       setSubmitting(false);
     }
@@ -211,11 +218,17 @@ export const SettingsPage = () => {
         body: JSON.stringify(newEmployee),
       });
 
-      if (!response.ok) throw new Error("Failed to create employee account");
       const created = await response.json();
-      setEmployees((prev) => [created, ...prev]);
+      if (!response.ok)
+        throw new Error(created.message || "Failed to create employee account");
+
+      const createdEmp = created.employee || created;
+
+      setEmployees((prev) =>
+        Array.isArray(prev) ? [createdEmp, ...prev] : [createdEmp],
+      );
       setNewEmployee({ name: "", email: "", password: "", role: "Cashier" });
-      triggerToast(`Employee ${created.name} added successfully!`);
+      triggerToast(`Employee ${createdEmp.name || ""} added successfully!`);
     } catch (err) {
       alert(err.message || "Error adding employee.");
     } finally {
@@ -224,11 +237,12 @@ export const SettingsPage = () => {
   };
 
   const handleDeleteEmployee = async (id) => {
+    if (!id) return;
     if (!window.confirm("Are you sure you want to delete this employee?"))
       return;
 
     try {
-      const response = await fetch(`/api/employees/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/employees/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -236,7 +250,7 @@ export const SettingsPage = () => {
       });
 
       if (!response.ok) throw new Error("Failed to delete employee");
-      setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+      setEmployees((prev) => prev.filter((emp) => (emp.id || emp._id) !== id));
       triggerToast("Employee account removed.");
     } catch (err) {
       alert(err.message || "Error removing employee.");
@@ -249,7 +263,7 @@ export const SettingsPage = () => {
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/business-settings", {
+      const response = await fetch(`${API_BASE_URL}/api/business-settings`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -309,7 +323,6 @@ export const SettingsPage = () => {
           <Lock className="w-4 h-4" /> Security
         </button>
 
-        {/* Show Employees & Business Config Tabs ONLY if Store Admin */}
         {isAdmin && (
           <>
             <button
@@ -465,7 +478,7 @@ export const SettingsPage = () => {
           </form>
         )}
 
-        {/* TAB 3: EMPLOYEES & STAFF (STORE ADMIN ONLY) */}
+        {/* TAB 3: EMPLOYEES & STAFF */}
         {activeTab === "employees" && isAdmin && (
           <div className="space-y-6">
             <form onSubmit={handleAddEmployee} className="settings-card">
@@ -578,7 +591,8 @@ export const SettingsPage = () => {
                   </p>
                 </div>
                 <span className="badge-count">
-                  <Users className="w-3.5 h-3.5" /> {employees.length} Staff
+                  <Users className="w-3.5 h-3.5" />{" "}
+                  {Array.isArray(employees) ? employees.length : 0} Staff
                 </span>
               </div>
 
@@ -594,37 +608,52 @@ export const SettingsPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {employees.map((emp) => (
-                      <tr key={emp.id}>
-                        <td className="font-semibold">{emp.name}</td>
-                        <td style={{ color: "var(--text-muted)" }}>
-                          {emp.email}
-                        </td>
-                        <td>
-                          <span
-                            className={`role-badge ${emp.role
-                              .replace(/\s+/g, "-")
-                              .toLowerCase()}`}
-                          >
-                            {emp.role}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="status-pill">
-                            {emp.status || "Active"}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: "right" }}>
-                          <button
-                            onClick={() => handleDeleteEmployee(emp.id)}
-                            className="btn-danger-icon"
-                            title="Deactivate / Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                    {Array.isArray(employees) && employees.length > 0 ? (
+                      employees.map((emp) => {
+                        const empId =
+                          emp.id || emp._id || Math.random().toString();
+                        const roleClass = (emp.role || "cashier")
+                          .replace(/\s+/g, "-")
+                          .toLowerCase();
+
+                        return (
+                          <tr key={empId}>
+                            <td className="font-semibold">{emp.name}</td>
+                            <td style={{ color: "var(--text-muted)" }}>
+                              {emp.email}
+                            </td>
+                            <td>
+                              <span className={`role-badge ${roleClass}`}>
+                                {emp.role || "Cashier"}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="status-pill">
+                                {emp.status || "Active"}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: "right" }}>
+                              <button
+                                onClick={() => handleDeleteEmployee(empId)}
+                                className="btn-danger-icon"
+                                title="Deactivate / Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          style={{ textAlign: "center", padding: "1rem" }}
+                        >
+                          No employees found.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -632,7 +661,7 @@ export const SettingsPage = () => {
           </div>
         )}
 
-        {/* TAB 4: BUSINESS SETTINGS (STORE ADMIN ONLY) */}
+        {/* TAB 4: BUSINESS SETTINGS */}
         {activeTab === "business" && isAdmin && (
           <form onSubmit={handleBusinessSave} className="settings-card">
             <h2 className="card-title">Store & Business Setup</h2>

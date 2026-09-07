@@ -1,135 +1,103 @@
 /* ==========================================================================
-   ALBIJO LANDING PAGE STYLESHEET
+   ALBIJO LANDING PAGE STYLES - HIGH CONTRAST DARK MODE
    ========================================================================== */
 
-/* Theme Variables */
-:root {
-  --bg-primary: #f8fafc;
+/* --------------------------------------------------------------------------
+   THEME VARIABLES
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme="light"] {
+  --bg-landing: #ffffff;
   --bg-surface: #ffffff;
-  --bg-surface-subtle: #f1f5f9;
+  --bg-surface-subtle: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #64748b;
+
   --border-color: #e2e8f0;
+  --border-subtle: #cbd5e1;
 
-  --primary-color: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-light: #e0e7ff;
-  --primary-text: #ffffff;
   --primary-accent: #4f46e5;
+  --primary-light: #e0e7ff;
+  --nav-link-color: #334155;
+  --nav-link-hover: #4f46e5;
 
-  --emerald-bg: #ecfdf5;
-  --emerald-border: #a7f3d0;
-  --emerald-text: #059669;
-
-  --amber-bg: #fffbeb;
-  --amber-border: #fde68a;
-  --amber-text: #d97706;
-
-  --blue-text: #2563eb;
-
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.12);
 }
 
-/* Dark Mode Overrides */
 [data-theme="dark"] {
-  --bg-primary: #0f172a;
-  --bg-surface: #1e293b;
-  --bg-surface-subtle: #334155;
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
+  /* Layered Dark Backgrounds to distinguish cards from main background */
+  --bg-landing: #090d16;
+  --bg-surface: #0f172a;
+  --bg-surface-subtle: #1e293b;
+  --bg-card: #1e293b;
+  --bg-card-hover: #334155;
+
+  /* Explicit White and Slate Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #cbd5e1;
+
   --border-color: #334155;
+  --border-subtle: #475569;
 
-  --primary-color: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-light: rgba(99, 102, 241, 0.2);
-  --primary-accent: #a5b4fc; /* High contrast pastel indigo */
+  --primary-accent: #818cf8;
+  --primary-light: rgba(129, 140, 248, 0.18);
+  --nav-link-color: #ffffff;
+  --nav-link-hover: #818cf8;
 
-  --emerald-bg: rgba(16, 185, 129, 0.15);
-  --emerald-border: rgba(16, 185, 129, 0.3);
-  --emerald-text: #34d399;
-
-  --amber-bg: rgba(245, 158, 11, 0.15);
-  --amber-border: rgba(245, 158, 11, 0.3);
-  --amber-text: #fbbf24;
-
-  --blue-text: #60a5fa;
-
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.8);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.9);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.95);
 }
 
-/* EXPLICIT DARK MODE TEXT CONTRAST OVERRIDES */
-[data-theme="dark"] .albijo-hero-title {
+/* --------------------------------------------------------------------------
+   EXPLICIT DARK MODE UTILITY OVERRIDES
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .albijo-dark-heading,
+[data-theme="dark"] .albijo-hero-title,
+[data-theme="dark"] .albijo-section-title,
+[data-theme="dark"] .albijo-feature-title,
+[data-theme="dark"] .albijo-stakeholder-name,
+[data-theme="dark"] .albijo-modal-title,
+[data-theme="dark"] .albijo-stat-value,
+[data-theme="dark"] .albijo-about-card h3 {
   color: #ffffff !important;
 }
 
-[data-theme="dark"] .albijo-hero-title span {
-  color: #a5b4fc !important;
-}
-
-[data-theme="dark"] .albijo-hero-subtitle {
+[data-theme="dark"] .albijo-dark-body,
+[data-theme="dark"] .albijo-hero-subtitle,
+[data-theme="dark"] .albijo-section-subtitle,
+[data-theme="dark"] .albijo-feature-desc,
+[data-theme="dark"] .albijo-stakeholder-snippet,
+[data-theme="dark"] .albijo-modal-bio,
+[data-theme="dark"] .albijo-about-card p {
   color: #e2e8f0 !important;
 }
 
-[data-theme="dark"] .albijo-section-title {
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .albijo-section-subtitle {
+[data-theme="dark"] .albijo-dark-muted,
+[data-theme="dark"] .albijo-stat-label {
   color: #cbd5e1 !important;
 }
 
-[data-theme="dark"] .albijo-feature-title {
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .albijo-feature-desc {
-  color: #cbd5e1 !important;
-}
-
-[data-theme="dark"] .albijo-btn-outline {
-  color: #f8fafc !important;
-  background-color: #1e293b;
-  border-color: #475569;
-}
-
-[data-theme="dark"] .albijo-btn-outline:hover {
-  background-color: #334155;
-  border-color: #64748b;
-}
-
-/* Theme-Aware Icon Utility Classes */
-.icon-indigo {
-  color: var(--primary-accent);
-}
-.icon-emerald {
-  color: var(--emerald-text);
-}
-.icon-amber {
-  color: var(--amber-text);
-}
-.icon-blue {
-  color: var(--blue-text);
-}
-
-/* Base Styles */
+/* --------------------------------------------------------------------------
+   GLOBAL LAYOUT & CONTAINERS
+   -------------------------------------------------------------------------- */
 .albijo-landing {
+  background-color: var(--bg-landing) !important;
+  color: var(--text-primary) !important;
   min-height: 100vh;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
   transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
-  line-height: 1.5;
+    background-color 0.25s ease,
+    color 0.25s ease;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, sans-serif;
 }
 
 .albijo-container {
@@ -138,12 +106,14 @@
   padding: 0 1.5rem;
 }
 
-/* Navbar */
+/* --------------------------------------------------------------------------
+   HEADER & NAVIGATION
+   -------------------------------------------------------------------------- */
 .albijo-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background-color: var(--bg-surface);
+  background-color: var(--bg-landing) !important;
   border-bottom: 1px solid var(--border-color);
   backdrop-filter: blur(8px);
 }
@@ -156,36 +126,21 @@
 }
 
 .albijo-brand {
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
 }
 
-.albijo-logo-badge {
-  background-color: var(--primary-color);
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 1.25rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: 0.5rem;
-}
-
-.albijo-brand-name {
-  font-size: 1.5rem;
-  font-weight: 900;
-  letter-spacing: -0.025em;
-  color: var(--primary-accent);
-}
-
-.albijo-custom-logo {
-  max-height: 2.5rem;
+.albijo-brand-logo {
+  height: 2.75rem;
   width: auto;
   object-fit: contain;
+  border-radius: 0.375rem;
 }
 
 .albijo-nav-links {
   display: flex;
+  align-items: center;
   gap: 2rem;
   list-style: none;
   margin: 0;
@@ -193,283 +148,298 @@
 }
 
 .albijo-nav-link {
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 0.9375rem;
+  color: var(--nav-link-color) !important;
   font-weight: 600;
+  text-decoration: none;
+  font-size: 0.95rem;
   transition: color 0.2s ease;
 }
 
 .albijo-nav-link:hover {
-  color: var(--primary-accent);
+  color: var(--nav-link-hover) !important;
 }
 
 .albijo-nav-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
-/* Buttons */
 .albijo-theme-btn {
-  background: transparent;
+  background: var(--bg-surface-subtle);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 0.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 0.5rem;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .albijo-theme-btn:hover {
-  background-color: var(--bg-surface-subtle);
+  border-color: var(--primary-accent);
 }
 
+/* Button UI */
 .albijo-btn-primary {
-  background-color: var(--primary-color);
-  color: #ffffff;
+  background-color: var(--primary-accent) !important;
+  color: #ffffff !important;
   border: none;
-  padding: 0.65rem 1.25rem;
+  padding: 0.625rem 1.25rem;
   border-radius: 0.5rem;
   font-weight: 600;
-  font-size: 0.9375rem;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: var(--shadow-sm);
+  cursor: pointer;
   transition:
-    background-color 0.2s ease,
-    transform 0.1s ease;
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .albijo-btn-primary:hover {
-  background-color: var(--primary-hover);
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .albijo-btn-primary-lg {
   padding: 0.875rem 1.75rem;
-  font-size: 1.0625rem;
-  border-radius: 0.75rem;
+  font-size: 1rem;
+  border-radius: 0.625rem;
 }
 
 .albijo-btn-outline {
-  background-color: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 0.875rem 1.5rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  cursor: pointer;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+  background-color: var(--bg-card) !important;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.625rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .albijo-btn-outline:hover {
-  background-color: var(--bg-surface-subtle);
-  border-color: var(--text-muted);
-}
-
-/* Hero Section */
-.albijo-hero {
-  padding: 5rem 0 4rem;
-  text-align: center;
-}
-
-.albijo-badge {
-  display: inline-block;
-  background-color: var(--primary-light);
-  color: var(--primary-accent);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  padding: 0.35rem 0.875rem;
-  border-radius: 9999px;
-  margin-bottom: 1.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border: 1px solid rgba(99, 102, 241, 0.2);
-}
-
-.albijo-hero-title {
-  font-size: 3.25rem;
-  font-weight: 900;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  margin-bottom: 1.5rem;
-  color: var(--text-primary);
-}
-
-.albijo-hero-title span {
-  color: var(--primary-accent);
-}
-
-.albijo-hero-subtitle {
-  font-size: 1.25rem;
-  color: var(--text-secondary);
-  max-width: 48rem;
-  margin: 0 auto 2.5rem;
-  line-height: 1.6;
-}
-
-.albijo-hero-cta {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 3.5rem;
+  background-color: var(--bg-card-hover) !important;
+  border-color: var(--primary-accent) !important;
 }
 
 .albijo-hidden-input {
   display: none;
 }
 
-/* Dashboard Mockup Card */
+/* --------------------------------------------------------------------------
+   HERO SECTION
+   -------------------------------------------------------------------------- */
+.albijo-hero {
+  padding: 5rem 0 4rem 0;
+  text-align: center;
+}
+
+.albijo-badge {
+  display: inline-block;
+  padding: 0.35rem 0.875rem;
+  background-color: var(--primary-light) !important;
+  color: var(--primary-accent) !important;
+  border: 1px solid var(--primary-accent);
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.albijo-hero-title {
+  font-size: 3rem;
+  font-weight: 900;
+  line-height: 1.2;
+  color: var(--text-primary);
+  max-width: 900px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.albijo-hero-title span {
+  color: var(--primary-accent) !important;
+}
+
+.albijo-hero-subtitle {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  max-width: 680px;
+  margin: 0 auto 2.5rem auto;
+  line-height: 1.6;
+}
+
+.albijo-hero-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3.5rem;
+}
+
+/* Dashboard Preview Card */
 .albijo-dashboard-preview {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 1rem;
-  padding: 1.75rem;
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 1.25rem;
+  padding: 2rem;
   box-shadow: var(--shadow-lg);
-  max-width: 56rem;
+  max-width: 950px;
   margin: 0 auto;
 }
 
 .albijo-stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
+  gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
 .albijo-stat-card {
-  padding: 1.25rem;
+  background-color: var(--bg-surface-subtle) !important;
+  border: 1px solid var(--border-color) !important;
+  padding: 1.5rem;
   border-radius: 0.75rem;
   text-align: left;
-  border: 1px solid transparent;
-}
-
-.albijo-stat-card.indigo {
-  background-color: var(--primary-light);
-  border-color: rgba(99, 102, 241, 0.3);
-}
-
-.albijo-stat-card.emerald {
-  background-color: var(--emerald-bg);
-  border-color: var(--emerald-border);
-}
-
-.albijo-stat-card.amber {
-  background-color: var(--amber-bg);
-  border-color: var(--amber-border);
 }
 
 .albijo-stat-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.25rem;
-}
-
-.albijo-stat-card.indigo .albijo-stat-label {
-  color: var(--primary-accent);
-}
-.albijo-stat-card.emerald .albijo-stat-label {
-  color: var(--emerald-text);
-}
-.albijo-stat-card.amber .albijo-stat-label {
-  color: var(--amber-text);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
 }
 
 .albijo-stat-value {
   font-size: 1.75rem;
   font-weight: 800;
-}
-
-.albijo-stat-card.indigo .albijo-stat-value {
-  color: var(--primary-accent);
-}
-.albijo-stat-card.emerald .albijo-stat-value {
-  color: var(--emerald-text);
-}
-.albijo-stat-card.amber .albijo-stat-value {
-  color: var(--amber-text);
+  color: var(--text-primary);
 }
 
 .albijo-preview-footer {
-  border-top: 1px solid var(--border-color);
-  padding-top: 1rem;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+  color: var(--primary-accent) !important;
   font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-weight: 700;
 }
 
-/* Features Section */
-.albijo-features-section {
-  padding: 5rem 0;
-}
-
+/* --------------------------------------------------------------------------
+   SECTION HEADERS
+   -------------------------------------------------------------------------- */
 .albijo-section-header {
   text-align: center;
-  margin-bottom: 3.5rem;
+  max-width: 700px;
+  margin: 0 auto 3.5rem auto;
 }
 
 .albijo-section-title {
   font-size: 2.25rem;
   font-weight: 800;
-  margin-bottom: 0.75rem;
-  letter-spacing: -0.02em;
   color: var(--text-primary);
+  margin-bottom: 1rem;
 }
 
 .albijo-section-subtitle {
+  font-size: 1.05rem;
   color: var(--text-secondary);
-  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+   ABOUT US SECTION
+   -------------------------------------------------------------------------- */
+.albijo-about-section {
+  padding: 5rem 0;
+  background-color: var(--bg-surface) !important;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.albijo-about-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.75rem;
+}
+
+.albijo-about-card {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  padding: 2.25rem 2rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+
+.albijo-about-card h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 1.25rem 0 0.75rem 0;
+  color: var(--text-primary);
+}
+
+.albijo-about-card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+/* Icon Palette Adjustments */
+.icon-indigo {
+  color: #818cf8 !important;
+}
+.icon-emerald {
+  color: #34d399 !important;
+}
+.icon-amber {
+  color: #fbbf24 !important;
+}
+.icon-blue {
+  color: #60a5fa !important;
+}
+
+/* --------------------------------------------------------------------------
+   FEATURES SECTION
+   -------------------------------------------------------------------------- */
+.albijo-features-section {
+  padding: 5.5rem 0;
+  background-color: var(--bg-landing) !important;
 }
 
 .albijo-features-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
 }
 
 .albijo-feature-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  padding: 1.75rem;
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  padding: 2.25rem;
   border-radius: 1rem;
+  text-align: left;
   box-shadow: var(--shadow-sm);
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.albijo-feature-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--primary-accent);
 }
 
 .albijo-feature-icon {
-  margin-bottom: 1.25rem;
-  display: inline-block;
+  margin-bottom: 1rem;
 }
 
 .albijo-feature-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: var(--text-primary);
+  margin-bottom: 0.5rem;
 }
 
 .albijo-feature-desc {
@@ -478,97 +448,289 @@
   line-height: 1.6;
 }
 
-/* White Label Section */
+/* --------------------------------------------------------------------------
+   WHITE-LABEL SECTION
+   -------------------------------------------------------------------------- */
 .albijo-whitelabel-section {
-  padding: 5rem 0;
-  background-color: var(--bg-surface-subtle);
+  padding: 5.5rem 0;
+  background-color: var(--bg-surface) !important;
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
 }
 
 .albijo-whitelabel-flex {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
   gap: 3rem;
+  align-items: center;
 }
 
 .albijo-whitelabel-content {
-  flex: 1;
-}
-
-.albijo-whitelabel-card {
-  flex: 1;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 1rem;
-  padding: 2.5rem;
-  text-align: center;
-  box-shadow: var(--shadow-md);
+  text-align: left;
 }
 
 .albijo-list {
   list-style: none;
   padding: 0;
-  margin: 1.5rem 0;
+  margin: 1.5rem 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .albijo-list-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.875rem;
-  font-weight: 600;
-  font-size: 0.9375rem;
+}
+
+.albijo-list-item span {
   color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
 .albijo-check-icon {
-  color: var(--emerald-text);
+  color: #34d399 !important;
   flex-shrink: 0;
 }
 
-/* Footer */
-.albijo-footer {
-  padding: 2.5rem 0;
-  border-top: 1px solid var(--border-color);
+.albijo-whitelabel-card {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  padding: 2.5rem;
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-md);
   text-align: center;
-  color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   STAKEHOLDERS & LEADERSHIP SECTION
+   -------------------------------------------------------------------------- */
+.albijo-stakeholders-section {
+  padding: 5.5rem 0;
+  background-color: var(--bg-landing) !important;
+}
+
+.albijo-stakeholders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.albijo-stakeholder-card {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.albijo-stakeholder-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-accent) !important;
+}
+
+.albijo-stakeholder-img-wrapper {
+  position: relative;
+  width: 100%;
+  height: 230px;
+  background-color: var(--bg-surface-subtle) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.albijo-stakeholder-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.albijo-stakeholder-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--primary-light) !important;
+  color: var(--primary-accent) !important;
+}
+
+.albijo-placeholder-icon {
+  stroke: var(--primary-accent) !important;
+}
+
+.albijo-card-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.albijo-stakeholder-card:hover .albijo-card-hover-overlay {
+  opacity: 1;
+}
+
+.albijo-overlay-icon {
+  stroke: #ffffff !important;
+}
+
+.albijo-stakeholder-info {
+  padding: 1.75rem 1.5rem;
+  text-align: left;
+}
+
+.albijo-stakeholder-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.albijo-stakeholder-role {
   font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--primary-accent) !important;
+  margin-bottom: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* Responsive Media Queries */
-@media (max-width: 1024px) {
-  .albijo-features-grid {
-    grid-template-columns: repeat(2, 1fr);
+.albijo-stakeholder-snippet {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+   STAKEHOLDER MODAL POPUP
+   -------------------------------------------------------------------------- */
+.albijo-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.albijo-modal-content {
+  position: relative;
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 1.25rem;
+  max-width: 620px;
+  width: 100%;
+  padding: 2.25rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.albijo-modal-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: var(--bg-surface-subtle) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.albijo-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  text-align: left;
+}
+
+.albijo-modal-img-container {
+  width: 100%;
+  height: 250px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: var(--bg-surface-subtle) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.albijo-modal-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.albijo-modal-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-light) !important;
+  color: var(--primary-accent) !important;
+}
+
+.albijo-modal-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 0.5rem;
+}
+
+.albijo-modal-divider {
+  height: 1px;
+  background-color: var(--border-color) !important;
+  margin: 1.25rem 0;
+}
+
+.albijo-modal-bio {
+  font-size: 0.975rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE DESIGN
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .albijo-about-grid,
+  .albijo-features-grid,
+  .albijo-stats-row {
+    grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 768px) {
-  .albijo-nav-links {
-    display: none;
+  .albijo-whitelabel-flex {
+    grid-template-columns: 1fr;
   }
 
   .albijo-hero-title {
     font-size: 2.25rem;
   }
 
-  .albijo-hero-subtitle {
-    font-size: 1rem;
-  }
-
-  .albijo-hero-cta {
-    flex-direction: column;
-  }
-
-  .albijo-stats-row {
-    grid-template-columns: 1fr;
-  }
-
-  .albijo-whitelabel-flex {
-    flex-direction: column;
-  }
-
-  .albijo-features-grid {
-    grid-template-columns: 1fr;
+  .albijo-nav-links {
+    display: none;
   }
 }
