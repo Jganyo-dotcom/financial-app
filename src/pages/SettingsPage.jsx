@@ -8,7 +8,6 @@ import {
   EyeOff,
   Save,
   Users,
-  CheckCircle,
   Trash2,
   Loader2,
 } from "lucide-react";
@@ -50,24 +49,18 @@ export const SettingsPage = () => {
   });
   const [showEmpPassword, setShowEmpPassword] = useState(false);
 
-  // Staff List State (Initialized as empty array)
+  // Staff List State
   const [employees, setEmployees] = useState([]);
 
   // Business Settings State
   const [business, setBusiness] = useState({
-    storeName: "",
+    name: "",
     address: "",
     currency: "USD ($)",
     taxRate: "",
     receiptMessage: "",
+    companyRef: "",
   });
-
-  const [toastMessage, setToastMessage] = useState("");
-
-  const triggerToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(""), 3000);
-  };
 
   // Fetch initial data from backend API
   useEffect(() => {
@@ -80,29 +73,27 @@ export const SettingsPage = () => {
         // 1. Fetch User Profile
         const profileRes = await fetch(
           `${API_BASE_URL}/api/auth/user/profile`,
-          {
-            headers,
-          },
+          { headers },
         );
         if (profileRes.ok) {
           const profileData = await profileRes.json();
+          const userData = profileData.user || profileData;
           setProfile({
-            name: profileData.name || "",
-            email: profileData.email || "",
-            phone: profileData.phone || "",
+            name: userData.name || "",
+            email: userData.email || "",
+            phone: userData.phone || "",
           });
         }
 
-        // Fetch Staff & Business Settings if user is Store Admin
+        // 2. Fetch Staff & Business Settings if user is Store Admin
         if (isAdmin) {
           const [empRes, bizRes] = await Promise.all([
             fetch(`${API_BASE_URL}/api/auth/all-employees`, { headers }),
-            fetch(`${API_BASE_URL}/api/business-settings`, { headers }),
+            fetch(`${API_BASE_URL}/api/auth/business-settings`, { headers }), // Fixed missing slash in endpoint URL
           ]);
 
           if (empRes.ok) {
             const empData = await empRes.json();
-            // Safeguard against non-array response formats
             if (Array.isArray(empData)) {
               setEmployees(empData);
             } else if (Array.isArray(empData.employees)) {
@@ -114,11 +105,23 @@ export const SettingsPage = () => {
 
           if (bizRes.ok) {
             const bizData = await bizRes.json();
-            setBusiness((prev) => ({ ...prev, ...bizData }));
+            // Handle nested objects safely (e.g. { settings: {...} } or raw object)
+            const payload = bizData.settings || bizData.business || bizData;
+
+            setBusiness({
+              name: payload.storeName || payload.name || "",
+              address: payload.address || "",
+              currency: payload.currency || "USD ($)",
+              taxRate: payload.taxRate ?? payload.tax_rate ?? "",
+              receiptMessage:
+                payload.receiptMessage || payload.receipt_footer || "",
+              companyRef: payload.companyRef || payload.company_code || "",
+            });
           }
         }
       } catch (error) {
         console.error("Failed to load settings data:", error);
+        toast.error("Failed to load settings data");
       } finally {
         setLoadingData(false);
       }
@@ -148,7 +151,8 @@ export const SettingsPage = () => {
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.message || "Failed to update profile");
-      triggerToast("Profile updated successfully!");
+
+      toast.success("Profile updated successfully!");
     } catch (err) {
       toast.error(err.message || "Error updating profile.");
     } finally {
@@ -159,7 +163,7 @@ export const SettingsPage = () => {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passwords.newPassword !== passwords.confirmPassword) {
-      toast("Passwords do not match", { icon: "⚠️" });
+      toast.error("Passwords do not match");
       return;
     }
     if (submitting) return;
@@ -191,9 +195,9 @@ export const SettingsPage = () => {
         newPassword: "",
         confirmPassword: "",
       });
-      triggerToast("Password updated successfully!");
+      toast.success("Password updated successfully!");
     } catch (err) {
-      toast(err.message || "Error changing password.", { icon: "⚠️" });
+      toast.error(err.message || "Error changing password.");
     } finally {
       setSubmitting(false);
     }
@@ -202,7 +206,7 @@ export const SettingsPage = () => {
   const handleAddEmployee = async (e) => {
     e.preventDefault();
     if (!newEmployee.name || !newEmployee.email || !newEmployee.password) {
-      alert("Please fill in all required fields.");
+      toast.error("Please fill in all required fields.");
       return;
     }
     if (submitting) return;
@@ -228,9 +232,9 @@ export const SettingsPage = () => {
         Array.isArray(prev) ? [createdEmp, ...prev] : [createdEmp],
       );
       setNewEmployee({ name: "", email: "", password: "", role: "Cashier" });
-      triggerToast(`Employee ${createdEmp.name || ""} added successfully!`);
+      toast.success(`Employee ${createdEmp.name || ""} added successfully!`);
     } catch (err) {
-      alert(err.message || "Error adding employee.");
+      toast.error(err.message || "Error adding employee.");
     } finally {
       setSubmitting(false);
     }
@@ -242,7 +246,7 @@ export const SettingsPage = () => {
       return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/employees/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/employees/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -251,9 +255,9 @@ export const SettingsPage = () => {
 
       if (!response.ok) throw new Error("Failed to delete employee");
       setEmployees((prev) => prev.filter((emp) => (emp.id || emp._id) !== id));
-      triggerToast("Employee account removed.");
+      toast.success("Employee account removed.");
     } catch (err) {
-      alert(err.message || "Error removing employee.");
+      toast.error(err.message || "Error removing employee.");
     }
   };
 
@@ -263,19 +267,25 @@ export const SettingsPage = () => {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/business-settings`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+      const response = await fetch(
+        `${API_BASE_URL}/api/auth/business-settings`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(business),
         },
-        body: JSON.stringify(business),
-      });
+      );
 
-      if (!response.ok) throw new Error("Failed to save business settings");
-      triggerToast("Business settings saved!");
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to save business settings");
+
+      toast.success("Business settings saved successfully!");
     } catch (err) {
-      alert(err.message || "Error saving configuration.");
+      toast.error(err.message || "Error saving configuration.");
     } finally {
       setSubmitting(false);
     }
@@ -300,12 +310,6 @@ export const SettingsPage = () => {
           </p>
         </div>
       </div>
-
-      {toastMessage && (
-        <div className="settings-toast">
-          <CheckCircle className="w-4 h-4" /> {toastMessage}
-        </div>
-      )}
 
       {/* Tabs Navigation */}
       <div className="settings-tabs">
@@ -674,15 +678,35 @@ export const SettingsPage = () => {
                 <label className="form-label">Store / Business Name</label>
                 <input
                   type="text"
-                  value={business.storeName}
+                  value={business.name}
                   onChange={(e) =>
-                    setBusiness({ ...business, storeName: e.target.value })
+                    setBusiness({ ...business, name: e.target.value })
                   }
                   className="form-input"
                   required
                 />
               </div>
 
+              <div className="form-group">
+                <label className="form-label">Company Reference Code</label>
+                <input
+                  type="text"
+                  placeholder="e.g., AB-1234"
+                  value={business.companyRef || ""}
+                  onChange={(e) =>
+                    setBusiness({
+                      ...business,
+                      companyRef: e.target.value.toUpperCase(),
+                    })
+                  }
+                  className="form-input"
+                  maxLength={7}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid-2-col">
               <div className="form-group">
                 <label className="form-label">Default Currency</label>
                 <select
@@ -699,9 +723,7 @@ export const SettingsPage = () => {
                   <option value="NGN (₦)">NGN (₦)</option>
                 </select>
               </div>
-            </div>
 
-            <div className="grid-2-col">
               <div className="form-group">
                 <label className="form-label">Business Physical Address</label>
                 <input
@@ -713,7 +735,9 @@ export const SettingsPage = () => {
                   className="form-input"
                 />
               </div>
+            </div>
 
+            <div className="grid-2-col">
               <div className="form-group">
                 <label className="form-label">Sales Tax Rate (%)</label>
                 <input
