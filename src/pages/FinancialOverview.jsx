@@ -164,6 +164,11 @@ const totalExpenditure = totalProductCost + operationalExpenses;
 const netProfit = totalProductRevenue - totalExpenditure;
 
 
+  const totalCustomerCreditOwed = safeCreditAccounts.reduce(
+    (sum, acc) => sum + ((acc.totalOwed || 0) - ( 0)),
+    0,
+  );
+
   const totalUnitsSold = safeProducts.reduce(
     (sum, item) => sum + (item.unitsSold || 0),
     0,
