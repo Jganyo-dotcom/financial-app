@@ -169,10 +169,17 @@ const netProfit = totalProductRevenue - totalExpenditure;
     0,
   );
 
-  const totalUnitsSold = safeProducts.reduce(
-    (sum, item) => sum + (item.unitsSold || 0),
-    0,
-  );
+// Track total bulk packs sold across all products
+const totalPacksSold = safeProducts.reduce(
+  (sum, item) => sum + (item.packsSold || 0),
+  0,
+);
+
+// Track total single retail items sold across all products
+const totalSinglesSold = safeProducts.reduce(
+  (sum, item) => sum + (item.singlesSold || 0),
+  0,
+);
 
   // Search Filters
   const filteredProducts = safeProducts.filter(
@@ -237,19 +244,20 @@ const netProfit = totalProductRevenue - totalExpenditure;
       {/* Top 4 Metric Cards */}
       <section className="metrics-grid">
         <div className="metric-card">
-          <div className="metric-header">
-            <span className="metric-title">Gross Revenue</span>
-            <div className="icon-wrapper blue">
-              <TrendingUp size={18} />
-            </div>
-          </div>
-          <div className="metric-body">
-            <h3>GH₵{formatCurrency(totalProductRevenue)}</h3>
-            <span className="sub-text positive">
-              <ArrowUpRight size={14} /> Sales from {totalUnitsSold} units
-            </span>
-          </div>
-        </div>
+  <div className="metric-header">
+    <span className="metric-title">Gross Revenue</span>
+    <div className="icon-wrapper blue">
+      <TrendingUp size={18} />
+    </div>
+  </div>
+  <div className="metric-body">
+    <h3>GH₵{formatCurrency(totalProductRevenue)}</h3>
+    <span className="sub-text positive">
+      <ArrowUpRight size={14} /> {totalPacksSold} packs | {totalSinglesSold} singles sold
+    </span>
+  </div>
+</div>
+
 
         <div className="metric-card">
           <div className="metric-header">
