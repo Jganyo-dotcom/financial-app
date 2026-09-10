@@ -145,23 +145,24 @@ export default function FinancialOverview() {
     ? creditAccounts
     : [];
 
-  const totalProductRevenue = safeProducts.reduce(
-    (sum, item) => sum + (item.unitPrice || 0) * (item.unitsSold || 0),
-    0,
-  );
+// 1. Sum up the actual pre-calculated total revenue of each product
+const totalProductRevenue = safeProducts.reduce(
+  (sum, item) => sum + (item.totalRevenue || 0),
+  0,
+);
 
-  const totalProductCost = safeProducts.reduce(
-    (sum, item) => sum + (item.unitCost || 0) * (item.unitsSold || 0),
-    0,
-  );
+// 2. Sum up the actual pre-calculated total cost of each product
+const totalProductCost = safeProducts.reduce(
+  (sum, item) => sum + (item.totalCost || 0),
+  0,
+);
 
-  const totalExpenditure = totalProductCost + operationalExpenses;
-  const netProfit = totalProductRevenue - totalExpenditure;
+// 3. Keep your operational expenses logic
+const totalExpenditure = totalProductCost + operationalExpenses;
 
-  const totalCustomerCreditOwed = safeCreditAccounts.reduce(
-    (sum, acc) => sum + ((acc.totalOwed || 0) - ( 0)),
-    0,
-  );
+// 4. Calculate final net profit
+const netProfit = totalProductRevenue - totalExpenditure;
+
 
   const totalUnitsSold = safeProducts.reduce(
     (sum, item) => sum + (item.unitsSold || 0),
