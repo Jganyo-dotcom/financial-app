@@ -366,7 +366,7 @@ const totalSinglesSold = safeProducts.reduce(
                         <th>Product & Category</th>
                         <th>Unit Cost</th>
                         <th>Selling Price</th>
-                        <th>Units Sold</th>
+                        <th>Units Sold/pac</th>
                         <th>Total Revenue</th>
                         <th>Total Cost</th>
                         <th>Net Profit / Item</th>
@@ -383,9 +383,9 @@ const totalSinglesSold = safeProducts.reduce(
                       ) : (
                         filteredProducts.map((item, index) => {
                           const itemRevenue =
-                            (item.unitPrice || 0) * (item.unitsSold || 0);
+                            (item.unitPrice || 0) * (item.unitsSold || 0) || item.totalRevenue;
                           const itemCost =
-                            (item.unitCost || 0) * (item.unitsSold || 0);
+                            (item.unitCost || 0) * (item.unitsSold || 0) || item.totalCost;
                           const itemProfit = itemRevenue - itemCost;
                           const margin =
                             itemRevenue > 0
@@ -403,7 +403,7 @@ const totalSinglesSold = safeProducts.reduce(
                               <td>GH₵{formatCurrency(item.unitCost)}</td>
                               <td>GH₵{formatCurrency(item.unitPrice)}</td>
                               <td className="center-text">
-                                {item.unitsSold || 0}
+                                {item.unitsSold || item.singlesSold},{item.packsSold} pac
                               </td>
                               <td>GH₵{formatCurrency(itemRevenue)}</td>
                               <td className="text-muted-cell">

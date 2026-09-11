@@ -357,7 +357,7 @@ export default function SalesRegisterLedger() {
         </div>
 
         <div className="header-actions">
-          <button
+          {/* <button
             type="button"
             className="excel-export-btn"
             disabled={isTxLoading}
@@ -366,7 +366,7 @@ export default function SalesRegisterLedger() {
             }
           >
             <Download size={16} /> Export to Excel
-          </button>
+          </button> */}
           <button
             type="button"
             className="reconcile-trigger-btn"
